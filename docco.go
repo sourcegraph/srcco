@@ -162,11 +162,6 @@ func (c *GenCmd) Execute(args []string) error {
 
 func genSite(root, siteName string, files []string) error {
 	vLog("Generating Site")
-	// Here's the plan:
-	// * Make sitePath directory
-	// * Annotate one file at a time
-	// * Thow it into a file
-	// * Ignore srclib shit for now
 	sitePath := filepath.Join(root, siteName)
 	if err := os.MkdirAll(sitePath, 0755); err != nil {
 		log.Fatal(err)
@@ -367,7 +362,6 @@ func writeAnns(w io.Writer, src []byte, as []annotation) error {
 }
 
 func Main() error {
-	//log.SetPrefix("")
 	log.SetFlags(log.Lshortfile)
 	_, err := CLI.Parse()
 	return err
