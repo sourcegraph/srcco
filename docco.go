@@ -326,7 +326,6 @@ func writeAnns(w io.Writer, src []byte, as []annotation) error {
 		w.Write([]byte("</div>\n</pre>"))
 	}()
 	for i := 0; i < len(src); {
-		log.Println(i)
 		if len(as) == 0 {
 			_, err := w.Write(addDivs(src[i:]))
 			return err
