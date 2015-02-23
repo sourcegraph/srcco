@@ -463,10 +463,14 @@ func createSegments(src []byte, anns []annotation, docs []doc) ([]segment, error
 	vLog("Creating segments")
 	var segments []segment
 	var s segment
+	var lineComment bool
 	for i := 0; i < len(src); {
 		for len(docs) != 0 && docs[0].Start == uint32(i) {
 			// Add doc
-			s.DocHTML = docs[0].Data
+			if !lineComment {
+				s.DocHTML = docs[0].Data
+				lineComment = false
+			}
 			i = int(docs[0].End)
 			docs = docs[1:]
 		}
@@ -481,6 +485,29 @@ func createSegments(src []byte, anns []annotation, docs []doc) ([]segment, error
 		}
 		for src[i] == '\n' {
 			i++
+		}
+		// Special case: check to see if there's a newline
+		// between i and runTo. If there isn't, that means
+		// there's a line comment on the next line, and it
+		// should begin a new section.
+		if len(docs) != 0 {
+			lineComment = true
+			for j := i; j < runTo; j++ {
+				if src[j] == '\n' {
+					lineComment = false
+					break
+				}
+			}
+			if lineComment {
+				if s.DocHTML == "" {
+					s.DocHTML = "&nbsp;"
+				}
+				if s.CodeHTML == "" {
+					s.CodeHTML = "&nbsp;"
+				}
+				segments = append(segments, s)
+				s = segment{DocHTML: docs[0].Data}
+			}
 		}
 		for i < runTo {
 			if len(anns) == 0 {
@@ -502,6 +529,12 @@ func createSegments(src []byte, anns []annotation, docs []doc) ([]segment, error
 				string(a.Right)
 			i = a.End
 			anns = anns[1:]
+		}
+		if s.DocHTML == "" {
+			s.DocHTML = "&nbsp;"
+		}
+		if s.CodeHTML == "" {
+			s.CodeHTML = "&nbsp;"
 		}
 		segments = append(segments, s)
 		s = segment{}
