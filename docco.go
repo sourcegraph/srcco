@@ -167,6 +167,16 @@ type doc struct {
 	End    uint32
 }
 
+type docs []doc
+
+func (d docs) Len() int      { return len(d) }
+func (d docs) Swap(i, j int) { d[i], d[j] = d[j], d[i] }
+func (d docs) Less(i, j int) bool {
+	return d[i].Start < d[j].Start || (d[i].Start == d[j].Start && d[i].End < d[j].End)
+}
+
+var _ sort.Interface = docs{}
+
 type ref struct {
 	DefUnit string
 	DefPath string
@@ -209,6 +219,7 @@ func genSite(root, siteName string, files []string) error {
 				}
 			}
 		}
+		sort.Sort(docs(htmlDocs))
 		htmlFile := "/" + f + ".html"
 		anns, err := ann(src, out.Refs, htmlFile)
 		if err != nil {
