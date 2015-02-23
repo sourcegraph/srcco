@@ -145,7 +145,6 @@ func (c *GenCmd) Execute(args []string) error {
 	argv := []string{"src", "api", "units", dir}
 	cmd, stdout, stderr := command(argv)
 	vLogf("Running %v", argv)
-	// TODO: remove failedCmd
 	if err := cmd.Run(); err != nil {
 		log.Fatal(failedCmd{argv, []interface{}{err, stdout.String(), stderr.String()}})
 	}
@@ -179,6 +178,7 @@ var _ sort.Interface = docs{}
 type ref struct {
 	DefUnit string
 	DefPath string
+	File    string
 	Start   uint32
 }
 
@@ -195,6 +195,10 @@ func genSite(root, siteName string, files []string) error {
 	sitePath := filepath.Join(root, siteName)
 	if err := os.MkdirAll(sitePath, 0755); err != nil {
 		log.Fatal(err)
+	}
+	filesMap := map[string]struct{}{}
+	for _, f := range files {
+		filesMap[f] = struct{}{}
 	}
 	for _, f := range files {
 		vLog("Processing", f)
@@ -227,12 +231,12 @@ func genSite(root, siteName string, files []string) error {
 			}
 		}
 		sort.Sort(docs(htmlDocs))
-		htmlFile := "/" + f + ".html"
 		sort.Sort(refs(out.Refs))
-		anns, err := ann(src, out.Refs, htmlFile)
+		anns, err := ann(src, out.Refs, f, filesMap)
 		if err != nil {
 			return err
 		}
+		htmlFile := htmlFilename(f)
 		vLogf("Creating dir %s", filepath.Dir(filepath.Join(sitePath, htmlFile)))
 		if err := os.MkdirAll(filepath.Dir(filepath.Join(sitePath, htmlFile)), 0755); err != nil {
 			log.Fatal(err)
@@ -335,8 +339,12 @@ func (a htmlAnnotator) Annotate(start int, kind syntaxhighlight.Kind, tokText st
 	}, nil
 }
 
-func ann(src []byte, refs []ref, htmlFile string) ([]annotation, error) {
-	vLog("Annotating", htmlFile)
+func htmlFilename(filename string) string {
+	return filepath.Join("/", filename+".html")
+}
+
+func ann(src []byte, refs []ref, filename string, filesMap map[string]struct{}) ([]annotation, error) {
+	vLog("Annotating", filename)
 	annotations, err := syntaxhighlight.Annotate(src, htmlAnnotator(syntaxhighlight.DefaultHTMLConfig))
 	if err != nil {
 		return nil, err
@@ -367,13 +375,25 @@ func ann(src []byte, refs []ref, htmlFile string) ([]annotation, error) {
 			anns = append(anns, annotation{*a, false})
 			continue
 		}
-		a.Left = []byte(fmt.Sprintf(
-			`<span class="%s" id="%s"><a href="%s">`,
-			string(a.Left),
-			filepath.Join(r.DefUnit, r.DefPath),
-			htmlFile,
-		))
-		a.Right = []byte(`</span></a>`)
+		id := filepath.Join(r.DefUnit, r.DefPath)
+		var href string
+		if _, in := filesMap[r.File]; in {
+			href = htmlFilename(r.File) + "#" + id
+			a.Left = []byte(fmt.Sprintf(
+				`<span class="%s" id="%s"><a href="%s">`,
+				string(a.Left),
+				id,
+				href,
+			))
+			a.Right = []byte(`</span></a>`)
+		} else {
+			a.Left = []byte(fmt.Sprintf(
+				`<span class="%s" id="%s">`,
+				string(a.Left),
+				id,
+			))
+			a.Right = []byte(`</span>`)
+		}
 		anns = append(anns, annotation{*a, false})
 	}
 
