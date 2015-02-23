@@ -6,14 +6,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
-	"strings"
+	"text/template"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/sourcegraph/annotate"
@@ -238,17 +237,53 @@ func genSite(root, siteName string, files []string) error {
 		if err := os.MkdirAll(filepath.Dir(filepath.Join(sitePath, htmlFile)), 0755); err != nil {
 			log.Fatal(err)
 		}
+		s, err := createSegments(src, anns, htmlDocs)
+		if err != nil {
+			return err
+		}
 		vLogf("Creating file %s", filepath.Join(sitePath, htmlFile))
 		w, err := os.Create(filepath.Join(sitePath, htmlFile))
 		if err != nil {
 			return err
 		}
-		if err := writeHTML(w, src, anns, htmlDocs); err != nil {
+		if err := codeTemplate.Execute(w, HTMLOutput{f, s}); err != nil {
 			return err
 		}
 	}
 	return nil
 }
+
+type HTMLOutput struct {
+	Title    string
+	Segments []segment
+}
+
+var codeTemplate = template.Must(template.New("code").Parse(codeText))
+
+var codeText = `
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <style>
+.code {
+    white-space: pre-wrap;
+}
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      {{ range .Segments}}
+      <div class="row">
+        <div class="left col-xs-4">{{.DocHTML}}</div>
+        <div class="right col-xs-8 code">{{.CodeHTML}}</div>
+      </div>
+      {{ end }}
+    </div>
+  </body>
+</html>
+`
 
 type annotation struct {
 	annotate.Annotation
@@ -345,110 +380,60 @@ func ann(src []byte, refs []ref, htmlFile string) ([]annotation, error) {
 	return anns, nil
 }
 
-func writeHTML(w io.Writer, src []byte, anns []annotation, docs []doc) error {
-	vLog("Writing docs")
-	var leftLine int
-	if _, err := w.Write([]byte(fmt.Sprintf(`<div class="left"><div leftline=%d>`, leftLine))); err != nil {
-		return err
-	}
-	var docIndex int
-	for i, b := range src {
-		if b == '\n' {
-			leftLine++
-			if _, err := w.Write([]byte(fmt.Sprintf("</div>\n<div leftline=%d>", leftLine))); err != nil {
-				return err
-			}
-		}
-		if docIndex < len(docs) && i == int(docs[docIndex].Start) {
-			if _, err := w.Write([]byte(docs[docIndex].Data)); err != nil {
-				return err
-			}
-			docIndex++
-		}
-	}
-	w.Write([]byte(`</div></div>`))
-	inDocIndex := 0
-	inDoc := func(i uint32) bool {
-		// Move inDocIndex forward. TODO: explain '>='.
-		for inDocIndex < len(docs) && i >= docs[inDocIndex].End {
-			inDocIndex++
-		}
-		if inDocIndex >= len(docs) {
-			return false
-		}
-		// i is less than the End of the doc at the doc index.
-		// If it's greater than the doc's start, then we have
-		// an intersection.
-		if i >= docs[inDocIndex].Start {
-			return true
-		}
-		return false
-	}
+type segment struct {
+	DocHTML  string
+	CodeHTML string
+}
 
-	vLog("Writing annotations")
-	rightLine := 0
-	if _, err := w.Write([]byte(fmt.Sprintf(
-		`<pre><div class="right"><div rightline=%d>`,
-		rightLine,
-	))); err != nil {
-		return err
-	}
-	addDivs := func(src []byte) []byte {
-		buf := &bytes.Buffer{}
-		buf.Grow(len(src))
-		for i, b := range src {
-			if b == '\n' {
-				rightLine++
-				buf.Write([]byte(fmt.Sprintf("</div>\n<div rightline=%d>", rightLine)))
+// anns and docs must be sorted.
+func createSegments(src []byte, anns []annotation, docs []doc) ([]segment, error) {
+	vLog("Creating segments")
+	var segments []segment
+	var s segment
+	for i := 0; i < len(src); {
+		for len(docs) != 0 && docs[0].Start == uint32(i) {
+			// Add doc
+			s.DocHTML = docs[0].Data
+			i = int(docs[0].End)
+			docs = docs[1:]
+		}
+		var runTo int
+		if len(docs) != 0 {
+			runTo = int(docs[0].Start)
+		} else {
+			runTo = len(src)
+		}
+		for len(anns) != 0 && i > anns[0].Start {
+			anns = anns[1:]
+		}
+		for src[i] == '\n' {
+			i++
+		}
+		for i < runTo {
+			if len(anns) == 0 {
+				s.CodeHTML += template.HTMLEscapeString(string(src[i:runTo]))
+				i = runTo
+				break
+			}
+			a := anns[0]
+			if i < a.Start {
+				s.CodeHTML += template.HTMLEscapeString(string(src[i:a.Start]))
+				i = a.Start
 				continue
 			}
-			if !inDoc(uint32(i)) {
-				buf.WriteByte(b)
+			if a.End > runTo {
+				log.Fatal("createSegment: illegal state: a.End > runTo")
 			}
+			s.CodeHTML += string(a.Left) +
+				template.HTMLEscapeString(string(src[a.Start:a.End])) +
+				string(a.Right)
+			i = a.End
+			anns = anns[1:]
 		}
-		return buf.Bytes()
+		segments = append(segments, s)
+		s = segment{}
 	}
-	defer func() { w.Write([]byte("</div>\n</pre>")) }()
-	for i := 0; i < len(src); {
-		for inDoc(uint32(i)) {
-			// Throw away annotations that i has passed.
-			for len(anns) != 0 && i >= anns[0].Start {
-				anns = anns[1:]
-			}
-			i++
-		}
-		if len(anns) == 0 {
-			_, err := w.Write(addDivs(src[i:]))
-			return err
-		}
-		a := anns[0]
-		if i > a.Start {
-			log.Fatal("writeAnns: illegal state: i > a.Start")
-		}
-		if i < a.Start {
-			if _, err := w.Write(addDivs(src[i : i+1])); err != nil {
-				return err
-			}
-			i++
-			continue
-		}
-		// i == a.Start
-		for _, b := range src[a.Start:a.End] {
-			if b == '\n' {
-				log.Fatal(`writeAnns: illegal state: \n in annotation`)
-			}
-		}
-		if _, err := w.Write([]byte(strings.Join([]string{
-			string(a.Left),
-			string(src[a.Start:a.End]),
-			string(a.Right),
-		}, ""))); err != nil {
-			return err
-		}
-		i = a.End
-		anns = anns[1:]
-	}
-	return nil
+	return segments, nil
 }
 
 func Main() error {
