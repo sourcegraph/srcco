@@ -366,6 +366,7 @@ func ann(src []byte, refs []ref, filename string, filesMap map[string]struct{}) 
 		return ref{}, false
 	}
 
+	idSeen := map[string]bool{}
 	anns := make([]annotation, 0, len(annotations))
 	for _, a := range annotations {
 		r, found := refAt(uint32(a.Start))
@@ -375,23 +376,26 @@ func ann(src []byte, refs []ref, filename string, filesMap map[string]struct{}) 
 			anns = append(anns, annotation{*a, false})
 			continue
 		}
-		id := filepath.Join(r.DefUnit, r.DefPath)
-		var href string
 		if _, in := filesMap[r.File]; in {
-			href = htmlFilename(r.File) + "#" + id
-			a.Left = []byte(fmt.Sprintf(
-				`<span class="%s" id="%s"><a href="%s">`,
-				string(a.Left),
-				id,
-				href,
-			))
+			id := filepath.Join(r.DefUnit, r.DefPath)
+			href := htmlFilename(r.File) + "#" + id
+			if idSeen[id] {
+				a.Left = []byte(fmt.Sprintf(
+					`<span class="%s"><a href="%s">`,
+					string(a.Left),
+					href,
+				))
+			} else {
+				a.Left = []byte(fmt.Sprintf(
+					`<span class="%s" id="%s"><a href="%s">`,
+					string(a.Left),
+					id,
+					href,
+				))
+			}
 			a.Right = []byte(`</span></a>`)
 		} else {
-			a.Left = []byte(fmt.Sprintf(
-				`<span class="%s" id="%s">`,
-				string(a.Left),
-				id,
-			))
+			a.Left = []byte(fmt.Sprintf(`<span class="%s">`, string(a.Left)))
 			a.Right = []byte(`</span>`)
 		}
 		anns = append(anns, annotation{*a, false})
