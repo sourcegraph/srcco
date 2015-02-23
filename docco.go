@@ -1,5 +1,5 @@
 // srclib-docco is a docco-like static documentation generator.
-// TODO: write this in a literal style.
+
 package srclib_docco
 
 import (
@@ -190,15 +190,37 @@ func (r refs) Less(i, j int) bool { return r[i].Start < r[j].Start }
 
 var _ sort.Interface = refs{}
 
+type def struct {
+	defKey
+	File string
+}
+
+type defKey struct {
+	Unit string
+	Path string
+}
+
 func genSite(root, siteName string, files []string) error {
 	vLog("Generating Site")
 	sitePath := filepath.Join(root, siteName)
 	if err := os.MkdirAll(sitePath, 0755); err != nil {
 		log.Fatal(err)
 	}
-	filesMap := map[string]struct{}{}
+	defs := map[defKey]def{}
 	for _, f := range files {
-		filesMap[f] = struct{}{}
+		argv := []string{"src", "api", "list", "--file", filepath.Join(root, f), "--no-refs", "--no-docs"}
+		cmd, stdout, stderr := command(argv)
+		vLog("Running", argv)
+		if err := cmd.Run(); err != nil {
+			return failedCmd{argv, []interface{}{err, stdout.String(), stderr.String()}}
+		}
+		var out struct{ Defs []def }
+		if err := json.Unmarshal(stdout.Bytes(), &out); err != nil {
+			log.Fatal(err)
+		}
+		for _, d := range out.Defs {
+			defs[d.defKey] = d
+		}
 	}
 	for _, f := range files {
 		vLog("Processing", f)
@@ -220,19 +242,19 @@ func genSite(root, siteName string, files []string) error {
 			log.Fatal(err)
 		}
 
-		seenHTMLDoc := make(map[struct{ start, end uint32 }]struct{})
+		seenHTMLDoc := map[struct{ start, end uint32 }]bool{}
 		var htmlDocs []doc
 		for _, d := range out.Docs {
 			if d.Format == "text/html" {
-				if _, seen := seenHTMLDoc[struct{ start, end uint32 }{d.Start, d.End}]; !seen {
+				if !seenHTMLDoc[struct{ start, end uint32 }{d.Start, d.End}] {
 					htmlDocs = append(htmlDocs, d)
-					seenHTMLDoc[struct{ start, end uint32 }{d.Start, d.End}] = struct{}{}
+					seenHTMLDoc[struct{ start, end uint32 }{d.Start, d.End}] = true
 				}
 			}
 		}
 		sort.Sort(docs(htmlDocs))
 		sort.Sort(refs(out.Refs))
-		anns, err := ann(src, out.Refs, f, filesMap)
+		anns, err := ann(src, out.Refs, f, defs)
 		if err != nil {
 			return err
 		}
@@ -271,13 +293,28 @@ var codeText = `
     <title>{{.Title}}</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
     <style>
+.grid {
+    margin: 0px auto;
+    width: 90%;
+}
+.left {
+    float: left;
+    margin: 0px auto;
+    width: 30%;
+}
 .code {
+    font-family: Consolas,"Courier New","Andale Mono","Lucida Console",monospace;
     white-space: pre-wrap;
+}
+.right {
+    float: left;
+    margin: 0px auto;
+    width: 70%;
 }
     </style>
   </head>
   <body>
-    <div class="container">
+    <div class="grid">
       {{ range .Segments}}
       <div class="row">
         <div class="left col-xs-4">{{.DocHTML}}</div>
@@ -343,7 +380,7 @@ func htmlFilename(filename string) string {
 	return filepath.Join("/", filename+".html")
 }
 
-func ann(src []byte, refs []ref, filename string, filesMap map[string]struct{}) ([]annotation, error) {
+func ann(src []byte, refs []ref, filename string, defs map[defKey]def) ([]annotation, error) {
 	vLog("Annotating", filename)
 	annotations, err := syntaxhighlight.Annotate(src, htmlAnnotator(syntaxhighlight.DefaultHTMLConfig))
 	if err != nil {
@@ -376,9 +413,9 @@ func ann(src []byte, refs []ref, filename string, filesMap map[string]struct{}) 
 			anns = append(anns, annotation{*a, false})
 			continue
 		}
-		if _, in := filesMap[r.File]; in {
-			id := filepath.Join(r.DefUnit, r.DefPath)
-			href := htmlFilename(r.File) + "#" + id
+		if d, ok := defs[defKey{r.DefUnit, r.DefPath}]; ok {
+			id := filepath.Join(d.Unit, d.Path)
+			href := htmlFilename(d.File) + "#" + id
 			if idSeen[id] {
 				a.Left = []byte(fmt.Sprintf(
 					`<span class="%s"><a href="%s">`,
