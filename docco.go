@@ -128,7 +128,7 @@ func (c *GenCmd) Execute(args []string) error {
 	//
 	// We could import sourcegraph.com/sourcegraph/srclib, but I
 	// want to demonstrate how to use its command line interface.
-	var dir string
+	var dir string // test
 	if c.Dir == "" {
 		d, err := os.Getwd()
 		if err != nil {
@@ -297,6 +297,18 @@ var codeText = `
     margin: 0px auto;
     width: 90%;
 }
+.row {
+    zoom: 1;
+}
+.row:before, .row:after {
+    content: "\0200";
+    display: block;
+    height: 0;
+    overflow: hidden;
+}
+.row:after {
+    clear: both;
+}
 .left {
     float: left;
     margin: 0px auto;
@@ -317,7 +329,7 @@ var codeText = `
     <div class="grid">
       {{ range .Segments}}
       <div class="row">
-        <div class="left col-xs-4">{{.DocHTML}}</div>
+        <div class="left  col-xs-4">{{.DocHTML}}</div>
         <div class="right col-xs-8 code">{{.CodeHTML}}</div>
       </div>
       {{ end }}
