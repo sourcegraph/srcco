@@ -183,6 +183,14 @@ type ref struct {
 	Start   uint32
 }
 
+type refs []ref
+
+func (r refs) Len() int           { return len(r) }
+func (r refs) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }
+func (r refs) Less(i, j int) bool { return r[i].Start < r[j].Start }
+
+var _ sort.Interface = refs{}
+
 func genSite(root, siteName string, files []string) error {
 	vLog("Generating Site")
 	sitePath := filepath.Join(root, siteName)
@@ -221,6 +229,7 @@ func genSite(root, siteName string, files []string) error {
 		}
 		sort.Sort(docs(htmlDocs))
 		htmlFile := "/" + f + ".html"
+		sort.Sort(refs(out.Refs))
 		anns, err := ann(src, out.Refs, htmlFile)
 		if err != nil {
 			return err
