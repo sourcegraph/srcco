@@ -464,6 +464,17 @@ func createSegments(src []byte, anns []annotation, docs []doc) ([]segment, error
 	var segments []segment
 	var s segment
 	var lineComment bool
+	addSegment := func() {
+		// Hack.
+		if s.DocHTML == "" {
+			s.DocHTML = "&nbsp;"
+		}
+		if s.CodeHTML == "" {
+			s.CodeHTML = "&nbsp;"
+		}
+		segments = append(segments, s)
+		s = segment{}
+	}
 	for i := 0; i < len(src); {
 		for len(docs) != 0 && docs[0].Start == uint32(i) {
 			// Add doc
@@ -499,14 +510,8 @@ func createSegments(src []byte, anns []annotation, docs []doc) ([]segment, error
 				}
 			}
 			if lineComment {
-				if s.DocHTML == "" {
-					s.DocHTML = "&nbsp;"
-				}
-				if s.CodeHTML == "" {
-					s.CodeHTML = "&nbsp;"
-				}
-				segments = append(segments, s)
-				s = segment{DocHTML: docs[0].Data}
+				addSegment()
+				s.DocHTML = docs[0].Data
 			}
 		}
 		for i < runTo {
@@ -536,8 +541,7 @@ func createSegments(src []byte, anns []annotation, docs []doc) ([]segment, error
 		if s.CodeHTML == "" {
 			s.CodeHTML = "&nbsp;"
 		}
-		segments = append(segments, s)
-		s = segment{}
+		addSegment()
 	}
 	return segments, nil
 }
