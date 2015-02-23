@@ -160,6 +160,19 @@ func (c *GenCmd) Execute(args []string) error {
 	return genSite(dir, c.SiteDirName, us.collateFiles())
 }
 
+type doc struct {
+	Format string
+	Data   string
+	Start  uint32
+	End    uint32
+}
+
+type ref struct {
+	DefUnit string
+	DefPath string
+	Start   uint32
+}
+
 func genSite(root, siteName string, files []string) error {
 	vLog("Generating Site")
 	sitePath := filepath.Join(root, siteName)
@@ -172,20 +185,45 @@ func genSite(root, siteName string, files []string) error {
 		if err != nil {
 			return err
 		}
+		argv := []string{"src", "api", "list", "--file", filepath.Join(root, f), "--no-defs"}
+		cmd, stdout, stderr := command(argv)
+		vLog("Running", argv)
+		if err := cmd.Run(); err != nil {
+			return failedCmd{argv, []interface{}{err, stdout.String(), stderr.String()}}
+		}
+		out := struct {
+			Refs []ref
+			Docs []doc
+		}{}
+		if err := json.Unmarshal(stdout.Bytes(), &out); err != nil {
+			log.Fatal(err)
+		}
+
+		seenHTMLDoc := make(map[struct{ start, end uint32 }]struct{})
+		var htmlDocs []doc
+		for _, d := range out.Docs {
+			if d.Format == "text/html" {
+				if _, seen := seenHTMLDoc[struct{ start, end uint32 }{d.Start, d.End}]; !seen {
+					htmlDocs = append(htmlDocs, d)
+					seenHTMLDoc[struct{ start, end uint32 }{d.Start, d.End}] = struct{}{}
+				}
+			}
+		}
 		htmlFile := "/" + f + ".html"
-		as, err := ann(src, root, f, htmlFile)
+		anns, err := ann(src, out.Refs, htmlFile)
 		if err != nil {
 			return err
 		}
-		vLog("Never get here")
+		vLogf("Creating dir %s", filepath.Dir(filepath.Join(sitePath, htmlFile)))
 		if err := os.MkdirAll(filepath.Dir(filepath.Join(sitePath, htmlFile)), 0755); err != nil {
 			log.Fatal(err)
 		}
+		vLogf("Creating file %s", filepath.Join(sitePath, htmlFile))
 		w, err := os.Create(filepath.Join(sitePath, htmlFile))
 		if err != nil {
 			return err
 		}
-		if err := writeAnns(w, src, as); err != nil {
+		if err := writeHTML(w, src, anns, htmlDocs); err != nil {
 			return err
 		}
 	}
@@ -242,35 +280,20 @@ func (a htmlAnnotator) Annotate(start int, kind syntaxhighlight.Kind, tokText st
 	}, nil
 }
 
-func ann(src []byte, root, file, htmlFile string) ([]annotation, error) {
-	vLog("Annotating", file)
+func ann(src []byte, refs []ref, htmlFile string) ([]annotation, error) {
+	vLog("Annotating", htmlFile)
 	annotations, err := syntaxhighlight.Annotate(src, htmlAnnotator(syntaxhighlight.DefaultHTMLConfig))
 	if err != nil {
 		return nil, err
 	}
 	sort.Sort(annotations)
-	as := make([]annotation, 0, len(annotations))
-	argv := []string{"src", "api", "list", "--file", filepath.Join(root, file)}
-	cmd, stdout, stderr := command(argv)
-	vLog("Running", argv)
-	if err := cmd.Run(); err != nil {
-		return nil, failedCmd{argv, []interface{}{err, stdout.String(), stderr.String()}}
-	}
-	type ref struct {
-		DefUnit string
-		DefPath string
-		Start   uint32
-	}
-	refs := []ref{}
-	if err := json.Unmarshal(stdout.Bytes(), &refs); err != nil {
-		log.Fatal(err)
-	}
+
 	var refAtIndex int
 	refAt := func(start uint32) (r ref, found bool) {
 		for refAtIndex < len(refs) {
 			if refs[refAtIndex].Start == start {
-				refAtIndex++
-				return r, true
+				defer func() { refAtIndex++ }()
+				return refs[refAtIndex], true
 			} else if refs[refAtIndex].Start < start {
 				refAtIndex++
 			} else { // refs[refAtIndex].Start > start
@@ -279,16 +302,14 @@ func ann(src []byte, root, file, htmlFile string) ([]annotation, error) {
 		}
 		return ref{}, false
 	}
+
+	anns := make([]annotation, 0, len(annotations))
 	for _, a := range annotations {
-		if string(a.Left) == "com" {
-			as = append(as, annotation{*a, true})
-			continue
-		}
 		r, found := refAt(uint32(a.Start))
 		if !found {
 			a.Left = []byte(fmt.Sprintf(`<span class="%s">`, string(a.Left)))
 			a.Right = []byte(`</span>`)
-			as = append(as, annotation{*a, false})
+			anns = append(anns, annotation{*a, false})
 			continue
 		}
 		a.Left = []byte(fmt.Sprintf(
@@ -298,39 +319,89 @@ func ann(src []byte, root, file, htmlFile string) ([]annotation, error) {
 			htmlFile,
 		))
 		a.Right = []byte(`</span></a>`)
-		as = append(as, annotation{*a, false})
+		anns = append(anns, annotation{*a, false})
 	}
-	return as, nil
+
+	return anns, nil
 }
 
-func writeAnns(w io.Writer, src []byte, as []annotation) error {
+func writeHTML(w io.Writer, src []byte, anns []annotation, docs []doc) error {
+	vLog("Writing docs")
+	var leftLine int
+	if _, err := w.Write([]byte(fmt.Sprintf(`<div class="left"><div leftline=%d>`, leftLine))); err != nil {
+		return err
+	}
+	var docIndex int
+	for i, b := range src {
+		if b == '\n' {
+			leftLine++
+			if _, err := w.Write([]byte(fmt.Sprintf("</div>\n<div leftline=%d>", leftLine))); err != nil {
+				return err
+			}
+		}
+		if docIndex < len(docs) && i == int(docs[docIndex].Start) {
+			if _, err := w.Write([]byte(docs[docIndex].Data)); err != nil {
+				return err
+			}
+			docIndex++
+		}
+	}
+	w.Write([]byte(`</div></div>`))
+	inDocIndex := 0
+	inDoc := func(i uint32) bool {
+		// Move inDocIndex forward. TODO: explain '>='.
+		for inDocIndex < len(docs) && i >= docs[inDocIndex].End {
+			inDocIndex++
+		}
+		if inDocIndex >= len(docs) {
+			return false
+		}
+		// i is less than the End of the doc at the doc index.
+		// If it's greater than the doc's start, then we have
+		// an intersection.
+		if i >= docs[inDocIndex].Start {
+			return true
+		}
+		return false
+	}
+
 	vLog("Writing annotations")
-	line := 0
-	if _, err := w.Write([]byte(fmt.Sprintf(`<pre><div line=%d>`, line))); err != nil {
+	rightLine := 0
+	if _, err := w.Write([]byte(fmt.Sprintf(
+		`<pre><div class="right"><div rightline=%d>`,
+		rightLine,
+	))); err != nil {
 		return err
 	}
 	addDivs := func(src []byte) []byte {
 		buf := &bytes.Buffer{}
 		buf.Grow(len(src))
-		for _, b := range src {
+		for i, b := range src {
 			if b == '\n' {
-				line++
-				buf.Write([]byte(fmt.Sprintf("</div>\n<div line=%d>", line)))
+				rightLine++
+				buf.Write([]byte(fmt.Sprintf("</div>\n<div rightline=%d>", rightLine)))
 				continue
 			}
-			buf.WriteByte(b)
+			if !inDoc(uint32(i)) {
+				buf.WriteByte(b)
+			}
 		}
 		return buf.Bytes()
 	}
-	defer func() {
-		w.Write([]byte("</div>\n</pre>"))
-	}()
+	defer func() { w.Write([]byte("</div>\n</pre>")) }()
 	for i := 0; i < len(src); {
-		if len(as) == 0 {
+		for inDoc(uint32(i)) {
+			// Throw away annotations that i has passed.
+			for len(anns) != 0 && i >= anns[0].Start {
+				anns = anns[1:]
+			}
+			i++
+		}
+		if len(anns) == 0 {
 			_, err := w.Write(addDivs(src[i:]))
 			return err
 		}
-		a := as[0]
+		a := anns[0]
 		if i > a.Start {
 			log.Fatal("writeAnns: illegal state: i > a.Start")
 		}
@@ -355,7 +426,7 @@ func writeAnns(w io.Writer, src []byte, as []annotation) error {
 			return err
 		}
 		i = a.End
-		as = as[1:]
+		anns = anns[1:]
 	}
 	return nil
 }
