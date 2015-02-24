@@ -430,7 +430,7 @@ type HTMLOutput struct {
 	Segments                  []segment
 }
 
-var codeTemplate = template.Must(template.ParseFiles("res/codeview.html"))
+var codeTemplate = template.Must(template.ParseFiles("res/view.html"))
 
 type annotation struct {
 	annotate.Annotation
