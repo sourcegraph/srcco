@@ -222,7 +222,7 @@ func genSite(root, siteName string, files []string) error {
 	if err := os.MkdirAll(sitePath, 0755); err != nil {
 		log.Fatal(err)
 	}
-	allDefs := []def{}
+	structuredTOCs := map[string]string{}
 	defsMap := map[defKey]def{}
 	for _, f := range files {
 		argv := []string{"src", "api", "list", "--file", filepath.Join(root, f), "--no-refs", "--no-docs"}
@@ -236,12 +236,11 @@ func genSite(root, siteName string, files []string) error {
 			log.Fatal(err)
 		}
 		for _, d := range out.Defs {
-			allDefs = append(allDefs, d)
 			defsMap[d.defKey] = d
 		}
+		sort.Sort(defs(out.Defs))
+		structuredTOCs[f] = createTableOfContents(defsWrapPathers(defsTOCFilter(out.Defs)))
 	}
-	sort.Sort(defs(allDefs))
-	structuredTOC := createTableOfContents(defsWrapPathers(allDefs))
 	fileTOC := createTableOfContents(filesWrapPathers(files))
 
 	for _, f := range files {
@@ -295,7 +294,7 @@ func genSite(root, siteName string, files []string) error {
 			return err
 		}
 
-		if err := codeTemplate.Execute(w, HTMLOutput{f, fileTOC, structuredTOC, s}); err != nil {
+		if err := codeTemplate.Execute(w, HTMLOutput{f, fileTOC, structuredTOCs[f], s}); err != nil {
 			return err
 		}
 	}
@@ -328,6 +327,19 @@ type tocNode struct {
 
 type pather interface {
 	path() string
+}
+
+func defsTOCFilter(defs []def) []def {
+	f := defs[:0]
+	m := map[def]bool{}
+	for _, d := range defs {
+		if !m[d] {
+			m[d] = true
+			d.TreePath = strings.TrimPrefix(d.TreePath, "./")
+			f = append(f, d)
+		}
+	}
+	return f
 }
 
 func defsWrapPathers(defs []def) []pather {
@@ -409,7 +421,7 @@ func createTableOfContents(pathers []pather) string {
 		case def:
 			patherToHTML = func(p pather) string {
 				d := p.(def)
-				return fmt.Sprintf(`<a class="def" href="%s">%s</a>`,
+				return fmt.Sprintf(`<li><a class="def" href="%s">%s</a></li>`,
 					htmlFilename(d.File)+"#"+filepath.Join(d.Unit, d.Path),
 					d.Name,
 				)
@@ -417,7 +429,7 @@ func createTableOfContents(pathers []pather) string {
 		case file:
 			patherToHTML = func(p pather) string {
 				f := string(p.(file))
-				return fmt.Sprintf(`<a class="file" href="%s">%s</a>`,
+				return fmt.Sprintf(`<li><a class="file" href="%s">%s</a></li>`,
 					htmlFilename(f),
 					filepath.Base(f),
 				)
@@ -428,18 +440,18 @@ func createTableOfContents(pathers []pather) string {
 	}
 	var nodeToHTML func(n tocNode) string
 	nodeToHTML = func(n tocNode) string {
-		title := fmt.Sprintf(`<div class="node-title">%s</div>`, n.name)
-		body := `<div class="node-body">`
+		title := fmt.Sprintf(`<li class="node-title">%s</li>`, n.name)
+		body := `<ul class="node-body">`
 		for _, c := range n.nodes {
 			body += nodeToHTML(*c)
 		}
 		for _, p := range n.pathers {
 			body += patherToHTML(p)
 		}
-		body += "</div>"
+		body += "</ul>"
 		return title + "\n" + body
 	}
-	return nodeToHTML(*nodes["/"])
+	return "<ul>" + nodeToHTML(*nodes["/"]) + "</ul>"
 }
 
 type HTMLOutput struct {
