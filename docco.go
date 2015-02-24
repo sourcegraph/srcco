@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -298,7 +299,25 @@ func genSite(root, siteName string, files []string) error {
 			return err
 		}
 	}
-	return nil
+	return copyFile("res/style.css", filepath.Join(sitePath, "style.css"))
+}
+
+func copyFile(here, there string) error {
+	r, err := os.Open(here)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	w, err := os.Create(there)
+	if err != nil {
+		return err
+	}
+	defer w.Close()
+
+	// do the actual work
+	_, err = io.Copy(w, r)
+	return err
 }
 
 type tocNode struct {
