@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"text/template"
 
 	"github.com/jessevdk/go-flags"
@@ -190,15 +191,29 @@ func (r refs) Less(i, j int) bool { return r[i].Start < r[j].Start }
 
 var _ sort.Interface = refs{}
 
-type def struct {
-	defKey
-	File string
-}
-
 type defKey struct {
 	Unit string
 	Path string
 }
+
+type def struct {
+	defKey
+	Name     string
+	File     string
+	TreePath string
+}
+
+func (d def) path() string {
+	return d.TreePath
+}
+
+type defs []def
+
+func (d defs) Len() int           { return len(d) }
+func (d defs) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
+func (d defs) Less(i, j int) bool { return d[i].TreePath < d[j].TreePath }
+
+var _ sort.Interface = defs{}
 
 func genSite(root, siteName string, files []string) error {
 	vLog("Generating Site")
@@ -206,7 +221,8 @@ func genSite(root, siteName string, files []string) error {
 	if err := os.MkdirAll(sitePath, 0755); err != nil {
 		log.Fatal(err)
 	}
-	defs := map[defKey]def{}
+	allDefs := []def{}
+	defsMap := map[defKey]def{}
 	for _, f := range files {
 		argv := []string{"src", "api", "list", "--file", filepath.Join(root, f), "--no-refs", "--no-docs"}
 		cmd, stdout, stderr := command(argv)
@@ -219,9 +235,14 @@ func genSite(root, siteName string, files []string) error {
 			log.Fatal(err)
 		}
 		for _, d := range out.Defs {
-			defs[d.defKey] = d
+			allDefs = append(allDefs, d)
+			defsMap[d.defKey] = d
 		}
 	}
+	sort.Sort(defs(allDefs))
+	structuredTOC := createTableOfContents(defsWrapPathers(allDefs))
+	fileTOC := createTableOfContents(filesWrapPathers(files))
+
 	for _, f := range files {
 		vLog("Processing", f)
 		src, err := ioutil.ReadFile(filepath.Join(root, f))
@@ -254,7 +275,7 @@ func genSite(root, siteName string, files []string) error {
 		}
 		sort.Sort(docs(htmlDocs))
 		sort.Sort(refs(out.Refs))
-		anns, err := ann(src, out.Refs, f, defs)
+		anns, err := ann(src, out.Refs, f, defsMap)
 		if err != nil {
 			return err
 		}
@@ -272,16 +293,141 @@ func genSite(root, siteName string, files []string) error {
 		if err != nil {
 			return err
 		}
-		if err := codeTemplate.Execute(w, HTMLOutput{f, s}); err != nil {
+
+		if err := codeTemplate.Execute(w, HTMLOutput{f, fileTOC, structuredTOC, s}); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
+type tocNode struct {
+	name    string
+	nodes   []*tocNode
+	pathers []pather
+}
+
+type pather interface {
+	path() string
+}
+
+func defsWrapPathers(defs []def) []pather {
+	ps := make([]pather, 0, len(defs))
+	for _, d := range defs {
+		ps = append(ps, pather(d))
+	}
+	return ps
+}
+
+type file string
+
+func (f file) path() string { return string(f) }
+
+func filesWrapPathers(files []string) []pather {
+	ps := make([]pather, 0, len(files))
+	for _, f := range files {
+		ps = append(ps, pather(file(f)))
+	}
+	return ps
+}
+
+func createTableOfContents(pathers []pather) string {
+	nodes := map[string]*tocNode{}
+	nodes["/"] = &tocNode{name: "/"}
+
+	getParent := func(i int, parts []string) *tocNode {
+		if i == 0 {
+			return nodes["/"]
+		}
+		parent := nodes[strings.Join(parts[0:i], "/")]
+		if parent == nil {
+			log.Fatal("createTOC: illegal state: parent == nil")
+		}
+		return parent
+	}
+	// We've created the head node and added it to our map. Now,
+	// we need to go through all of the pathers and add them to the
+	// correct node. To do this, we get the "name" for each
+	// section of the tree path. For instance, for the tree path
+	// "a/b/c/d", the nodes associated with it are "a", "a/b", and
+	// "a/b/c", and the pather, "d", should be added to "a/b/c".
+	for _, pather := range pathers {
+		// First, we split the path into parts separated by
+		// "/".
+		parts := strings.Split(pather.path(), "/")
+		// Now we walk through the parts.
+		for i, name := range parts {
+			// If "i" is the last index of "parts", that
+			// means it represents the pather and we need to
+			// add it to a node.
+			if i == len(parts)-1 {
+				parent := getParent(i, parts)
+				// Now we add this pather to the parent
+				// and break out of the loop.
+				parent.pathers = append(parent.pathers, pather)
+				break
+			}
+			// "i" is not the last index of "parts", which
+			// means that it is a node. First, we check to
+			// see if it exists.
+			path := strings.Join(parts[0:i+1], "/")
+			// If "n" is non-nil, then the node has
+			// already been created.
+			if n := nodes[path]; n != nil {
+				continue
+			}
+			// The node does not exist. First we add it to
+			// the nodes map, and then we add it to its
+			// parent.
+			nodes[path] = &tocNode{name: name}
+			parent := getParent(i, parts)
+			parent.nodes = append(parent.nodes, nodes[path])
+		}
+	}
+	var patherToHTML func(p pather) string
+	if len(pathers) != 0 {
+		switch pathers[0].(type) {
+		case def:
+			patherToHTML = func(p pather) string {
+				d := p.(def)
+				return fmt.Sprintf(`<a class="def" href="%s">%s</a>`,
+					htmlFilename(d.File)+"#"+filepath.Join(d.Unit, d.Path),
+					d.Name,
+				)
+			}
+		case file:
+			patherToHTML = func(p pather) string {
+				f := string(p.(file))
+				return fmt.Sprintf(`<a class="file" href="%s">%s</a>`,
+					htmlFilename(f),
+					filepath.Base(f),
+				)
+			}
+		default:
+			log.Fatal("createStructuredTOC: illegal state, pather's concrete type unknown")
+		}
+	}
+	var nodeToHTML func(n tocNode) string
+	nodeToHTML = func(n tocNode) string {
+		title := fmt.Sprintf(`<div class="node-title">%s</div>`, n.name)
+		body := `<div class="node-body">`
+		for _, c := range n.nodes {
+			body += nodeToHTML(*c)
+		}
+		for _, p := range n.pathers {
+			body += patherToHTML(p)
+		}
+		body += "</div>"
+		return title + "\n" + body
+	}
+	return nodeToHTML(*nodes["/"])
+}
+
 type HTMLOutput struct {
-	Title    string
-	Segments []segment
+	Title         string
+	FileTableOfContents       string
+	StructuredTableOfContents string
+	Segments      []segment
 }
 
 var codeTemplate = template.Must(template.New("code").Parse(codeText))
@@ -315,7 +461,7 @@ var codeText = `
     width: 30%;
 }
 .code {
-    font-family: Consolas,"Courier New","Andale Mono","Lucida Console",monospace;
+    font-family: Menlo,Consolas,Monaco,monospace;
     white-space: pre-wrap;
 }
 .right {
@@ -323,9 +469,20 @@ var codeText = `
     margin: 0px auto;
     width: 70%;
 }
+.tocs {
+    display: none;
+}
     </style>
   </head>
   <body>
+    <div class="tocs">
+      <div class="file-toc">
+        {{.FileTableOfContents}}
+      </div>
+      <div class="structured-toc">
+        {{.StructuredTableOfContents}}
+      </div>
+    </div>
     <div class="grid">
       {{ range .Segments}}
       <div class="row">
