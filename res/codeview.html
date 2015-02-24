@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <style>
+.grid {
+    margin: 0px auto;
+    width: 90%;
+}
+.row {
+    zoom: 1;
+}
+.row:before, .row:after {
+    content: "\0200";
+    display: block;
+    height: 0;
+    overflow: hidden;
+}
+.row:after {
+    clear: both;
+}
+.left {
+    float: left;
+    margin: 0px auto;
+    width: 30%;
+}
+.code {
+    font-family: Menlo,Consolas,Monaco,monospace;
+    white-space: pre-wrap;
+}
+.right {
+    float: left;
+    margin: 0px auto;
+    width: 70%;
+}
+.tocs {
+    display: none;
+}
+    </style>
+  </head>
+  <body>
+    <div class="tocs">
+      <div class="file-toc">
+        {{.FileTableOfContents}}
+      </div>
+      <div class="structured-toc">
+        {{.StructuredTableOfContents}}
+      </div>
+    </div>
+    <div class="grid">
+      {{ range .Segments}}
+      <div class="row">
+        <div class="left  col-xs-4">{{.DocHTML}}</div>
+        <div class="right col-xs-8 code">{{.CodeHTML}}</div>
+      </div>
+      {{ end }}
+    </div>
+  </body>
+</html>
