@@ -116,11 +116,11 @@ find $DOCS_PATH -maxdepth 1 -not -path $DOCS_PATH -and -not -path $DOCS_PATH/.gi
 # Do nothing unless we actually have changes
 if [[ `git status -s` != "" ]]; then
   exec_git add -A
-  exec_git commit -m $COMMIT_MESSAGE
+  exec_git commit -m "$COMMIT_MESSAGE"
   exec_git push $TARGET_REMOTE $TARGET_BRANCH
 fi
 
 # Clean up after ourselves
 rm -rf $DOCS_PATH
 
-exec_git checkout $CURRENT_BRANCH
+exec_git checkout "$CURRENT_BRANCH"
