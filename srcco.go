@@ -43,7 +43,7 @@ func vLog(v ...interface{}) {
 }
 
 func init() {
-	CLI.LongDescription = "TODO"
+	CLI.LongDescription = "srcco is a Docco-like editor that uses... TODO"
 	CLI.AddGroup("Global options", "", &GlobalOpt)
 
 	_, err := CLI.AddCommand("gen",
@@ -203,6 +203,8 @@ type def struct {
 	Name     string
 	File     string
 	TreePath string
+	DefStart uint32
+	DefEnd   uint32
 }
 
 func (d def) path() string {
@@ -567,7 +569,6 @@ func ann(src []byte, refs []ref, filename string, defs map[defKey]def) ([]annota
 		return ref{}, false
 	}
 
-	idSeen := map[string]bool{}
 	anns := make([]annotation, 0, len(annotations))
 	for _, a := range annotations {
 		r, found := refAt(uint32(a.Start))
@@ -580,17 +581,17 @@ func ann(src []byte, refs []ref, filename string, defs map[defKey]def) ([]annota
 		if d, ok := defs[defKey{r.DefUnit, r.DefPath}]; ok {
 			id := filepath.Join(d.Unit, d.Path)
 			href := htmlFilename(d.File) + "#" + id
-			if idSeen[id] {
-				a.Left = []byte(fmt.Sprintf(
-					`<span class="%s"><a href="%s">`,
-					string(a.Left),
-					href,
-				))
-			} else {
+			if d.DefStart == r.Start {
 				a.Left = []byte(fmt.Sprintf(
 					`<span class="%s" id="%s"><a href="%s">`,
 					string(a.Left),
 					id,
+					href,
+				))
+			} else {
+				a.Left = []byte(fmt.Sprintf(
+					`<span class="%s"><a href="%s">`,
+					string(a.Left),
 					href,
 				))
 			}
@@ -688,6 +689,6 @@ func createSegments(src []byte, anns []annotation, docs []doc) ([]segment, error
 func main() {
 	log.SetFlags(log.Lshortfile)
 	if _, err := CLI.Parse(); err != nil {
-		log.Fatal(err)
+		os.Exit(1)
 	}
 }
