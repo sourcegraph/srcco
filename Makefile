@@ -1,7 +1,7 @@
 .PHONY: install testserve serve 
 
 install:
-	go install github.com/samertm/srclib-docco/cmd/src-docco
+	go install github.com/samertm/srcco
 
 testserve: install
 	rm -rf .srclib-cache/ #SAMER: fix this
