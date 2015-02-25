@@ -17,8 +17,8 @@
     <div class="grid">
       {{ range .Segments}}
       <div class="row">
-        <div class="left">{{.DocHTML}}</div>
-        <div class="right code">{{.CodeHTML}}</div>
+        <div class="left">{{if .DocHTML}}{{.DocHTML}}{{else}}&nbsp;{{end}}</div>
+        {{if .CodeHTML}}<div class="right code">{{.CodeHTML}}</div>{{end}}
       </div>
       {{ end }}
     </div>

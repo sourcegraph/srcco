@@ -12,24 +12,15 @@ body {
 }
 .grid {
     height: 100%;
-    background-color: #ECFFFE;
     margin: 0px auto;
 }
 .row {
     overflow: hidden;
     padding: 10px 15px;
-    zoom: 1;
-}
-.row:before, .row:after {
-    content: "\0200";
-    display: block;
-    height: 0;
-    overflow: hidden;
-}
-.row:after {
-    clear: both;
 }
 .left {
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 15px;
     float: left;
     vertical-align: top;
     margin: 0px auto;
@@ -45,9 +36,9 @@ body {
     overflow: hidden;
     margin: 0px auto;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1) inset;
-    background-color: white;
+    background-color: #FCFCFC;
     min-width: 512px;
-    padding: 3px 1px;
+    padding: 10px;
 }
 .toc {
     position: absolute;
