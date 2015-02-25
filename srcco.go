@@ -560,7 +560,7 @@ func (a htmlAnnotator) Annotate(start int, kind syntaxhighlight.Kind, tokText st
 }
 
 func htmlFilename(filename string) string {
-	return filepath.Join("/", filename+".html")
+	return filepath.Join(resourcePrefix(filename), filename+".html")
 }
 
 func ann(src []byte, refs []ref, filename string, defs map[defKey]def) ([]annotation, error) {
