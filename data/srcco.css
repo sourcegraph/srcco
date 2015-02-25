@@ -59,6 +59,8 @@ body {
 
 /* ---------- nav --------------------------------*/
 .tocs {
+    /* disable for now */
+    display: none;
     border: solid 1px black;
     border-top: none;
     position: fixed;

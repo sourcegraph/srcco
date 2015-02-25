@@ -1,5 +1,5 @@
 // srcco is a Docco-like static documentation generator.
-package srcco
+package main
 
 import (
 	"bytes"
@@ -62,6 +62,8 @@ type GenCmd struct {
 	Dir string `long:"dir" description:"The root directory for the project"`
 	// TODO: must be relative to Dir.
 	SiteDirName string `long:"site-dir" description:"The directory name for the output files" default:"site"`
+	// TODO
+	GitHubPages bool `long:"gh-pages" description:"TODO"`
 }
 
 var genCmd GenCmd
@@ -297,22 +299,16 @@ func genSite(root, siteName string, files []string) error {
 			return err
 		}
 	}
-	if err := copyFile("res/srcco.css", filepath.Join(sitePath, "srcco.css")); err != nil {
+	if err := copyBytes(cssData, filepath.Join(sitePath, "srcco.css")); err != nil {
 		return err
 	}
-	if err := copyFile("res/srcco.js", filepath.Join(sitePath, "srcco.js")); err != nil {
+	if err := copyBytes(jsData, filepath.Join(sitePath, "srcco.js")); err != nil {
 		return err
 	}
 	return nil
 }
 
-func copyFile(here, there string) error {
-	r, err := os.Open(here)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
+func copyBytes(b []byte, there string) error {
 	w, err := os.Create(there)
 	if err != nil {
 		return err
@@ -320,7 +316,7 @@ func copyFile(here, there string) error {
 	defer w.Close()
 
 	// do the actual work
-	_, err = io.Copy(w, r)
+	_, err = io.Copy(w, bytes.NewReader(b))
 	return err
 }
 
@@ -466,7 +462,33 @@ type HTMLOutput struct {
 	Segments                  []segment
 }
 
-var codeTemplate = template.Must(template.ParseFiles("res/view.html"))
+var codeTemplate *template.Template
+var cssData []byte
+var jsData []byte
+var ghPagesScript []byte
+
+func init() {
+	r, err := Asset("view.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+	codeTemplate = template.Must(template.New("view.html").Parse(string(r)))
+	r, err = Asset("srcco.css")
+	if err != nil {
+		log.Fatal(err)
+	}
+	cssData = r
+	r, err = Asset("srcco.js")
+	if err != nil {
+		log.Fatal(err)
+	}
+	jsData = r
+	r, err = Asset("publish-gh-pages")
+	if err != nil {
+		log.Fatal(err)
+	}
+	ghPagesScript = r
+}
 
 type annotation struct {
 	annotate.Annotation
