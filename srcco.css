@@ -1,0 +1,133 @@
+html {
+    height: auto;
+    min-height: 100%;
+}
+body {
+    /* font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; */
+    font-family: "Helvetica Neue",Helvetica;
+    background-color: rgb(90, 90, 90);
+}
+.grid {
+    height: 100%;
+    margin: 0px auto;
+    padding: 0px 15px;
+    background-color: #F2F2F2;
+    width: auto;
+}
+.row {
+    overflow: hidden;
+    padding: 10px 15px;
+    width: auto;
+}
+.doc {
+    font-size: 17px;
+    margin: 0px auto;
+    padding: 0px 15px;
+    color: #444;
+    float: left;
+    width: 500px;
+}
+.code {
+    font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    overflow: hidden;
+    margin: 0px auto;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1) inset;
+    border-radius: 10px;
+    background-color: #373937;
+    min-width: 400px;
+    padding: 10px;
+}
+.code:hover a {
+    -webkit-animation: yellow-fade 0.6s ease-in-out 1;
+    -moz-animation: yellow-fade 0.6s ease-in-out 1;
+    animation: yellow-fade 0.6s ease-in-out 1;
+}
+.code a {
+    /* padding: 1px 2px; */
+    /* margin: -1px -2px; */
+
+    color: inherit;
+    text-decoration: none;
+    border-radius: 3px;
+    background: linear-gradient(to bottom, rgba(255,255,255,.35) 0%,rgba(255,255,255,.05) 100%);
+}
+.code a:hover {
+    background: linear-gradient(to bottom, rgba(255,255,0,.70) 0%,rgba(255,255,0,0.30) 100%);
+}
+
+/* ---------- nav --------------------------------*/
+.tocs {
+    /* disable for now */
+    display: none;
+    border: solid 1px black;
+    border-top: none;
+    position: fixed;
+    background: yellow;
+    margin: 0px 15px;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 20px;
+}
+.tocs.active {
+    width: 300px;
+}
+.tocs .active {
+    display: block;
+}
+.toc-name {
+    background: gray;
+    float: left;
+    margin: 0px 0px;
+    width: 50px;
+    text-align: center;
+    height: 20px;
+}
+.toc-name.active {
+    width: 150px;
+}
+.toc {
+    position: absolute;
+    overflow-y: scroll;
+    height: 100px;
+    width: 300px;
+    top: 20px;
+    display: none;
+}
+.node-body {
+    display: none;
+}
+.toc li {
+    list-style-type: none;
+    margin: 0;
+}
+
+/* ------- syntax highlighting -------------------*/
+/* Pretty printing styles. Used with prettify.js. */
+/* Vim sunburst theme by David Leibovic */
+
+.str, code .str { color: #65B042; } /* string  - green */
+.kwd, code .kwd { color: #E28964; } /* keyword - dark pink */
+.com, code .com { color: #AEAEAE; font-style: italic; } /* comment - gray */
+.typ, code .typ { color: #89bdff; } /* type - light blue */
+.lit, code .lit { color: #3387CC; } /* literal - blue */
+.pun, code .pun { color: #fff; } /* punctuation - white */
+.pln, code .pln { color: #fff; } /* plaintext - white */
+.tag, code .tag { color: #89bdff; } /* html/xml tag    - light blue */
+.atn, code .atn { color: #bdb76b; } /* html/xml attribute name  - khaki */
+.atv, code .atv { color: #65B042; } /* html/xml attribute value - green */
+.dec, code .dec { color: #3387CC; } /* decimal - blue */
+@media print {
+  .str, code .str { color: #060; }
+  .kwd, code .kwd { color: #006; font-weight: bold; }
+  .com, code .com { color: #600; font-style: italic; }
+  .typ, code .typ { color: #404; font-weight: bold; }
+  .lit, code .lit { color: #044; }
+  .pun, code .pun { color: #440; }
+  .pln, code .pln { color: #000; }
+  .tag, code .tag { color: #006; font-weight: bold; }
+  .atn, code .atn { color: #404; }
+  .atv, code .atv { color: #060; }
+}
