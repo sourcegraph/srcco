@@ -28,11 +28,14 @@
 //     -out="docs": The directory name for the output files
 //     -v=false: show verbose output
 //
-// Languages currently supported:
+// I extended the Go srclib toolchain
+// (https://sourcegraph.com/sourcegraph/srclib-go) to add start and end ranges
+// to comments. None of the other toolchains output this information
+// currently, but it shouldn't be that hard to add.
 //
-// - Go
-//
-// Languages that will be supported soon:
+// Languages that will be supported soon: (if you're interested in
+// hacking on a srclib toolchain, get in touch with the author of
+// srcco and I can help you get spun up)
 //
 // - Python
 //
@@ -191,7 +194,7 @@ func execute(dir string) error {
 	// call src.APIUnitsCmd.Execute, but I want to demonstrate how
 	// to use src's command line interface. Plus, the user needs
 	// to set up srclib with their toolchains after installing it,
-	// so it might confuse them if go getting srcco also
+	// so it might confuse them if go get'ing srcco also
 	// downloaded srclib's repo.
 	argv := []string{"src", "api", "units", dir}
 	cmd, stdout, stderr := command(argv)
