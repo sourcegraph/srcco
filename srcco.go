@@ -283,7 +283,7 @@ func genSite(root, siteName string, files []string) error {
 			}
 		}
 		sort.Sort(docs(htmlDocs))
-		sort.Sort(refs(out.Refs))
+		sort.Sort(refs(out.Refs)) // May be redundant.
 		anns, err := ann(src, out.Refs, f, defsMap)
 		if err != nil {
 			return err
@@ -293,6 +293,7 @@ func genSite(root, siteName string, files []string) error {
 		if err := os.MkdirAll(filepath.Dir(filepath.Join(sitePath, htmlFile)), 0755); err != nil {
 			log.Fatal(err)
 		}
+		sort.Sort(annotations(anns))
 		s, err := createSegments(src, anns, htmlDocs)
 		if err != nil {
 			return err
@@ -512,6 +513,14 @@ func init() {
 type annotation struct {
 	annotate.Annotation
 	Comment bool
+}
+
+type annotations []annotation
+
+func (a annotations) Len() int      { return len(a) }
+func (a annotations) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a annotations) Less(i, j int) bool {
+	return (a[i].Start < a[j].Start) || ((a[i].Start == a[j].Start) && a[i].End < a[j].End)
 }
 
 type htmlAnnotator syntaxhighlight.HTMLConfig
