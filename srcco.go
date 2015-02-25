@@ -150,8 +150,14 @@ func execute(dir string) error {
 		if err := genSite(dir, out, us.collateFiles()); err != nil {
 			return err
 		}
-		argv := []string{"bash", "-s"}
+		argv := []string{"src", "build-data", "rm", "--all", "--local"}
 		cmd, stdout, stderr := command(argv)
+		cmd.Dir = dir
+		if err := cmd.Run(); err != nil {
+			return failedCmd{argv, []interface{}{err, stdout.String(), stderr.String()}}
+		}
+		argv = []string{"bash", "-s"}
+		cmd, stdout, stderr = command(argv)
 		cmd.Stdin = bytes.NewReader(ghPagesScript)
 		if err := cmd.Run(); err != nil {
 			return failedCmd{argv, []interface{}{err, stdout.String(), stderr.String()}}
