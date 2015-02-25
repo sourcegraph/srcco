@@ -1,4 +1,44 @@
-// srcco is a Docco-like static documentation generator.
+// srcco (pronounced "source-co") is a literate-programming-style
+// documentation generator that makes the code clickable so you can jump
+// to the definition of any function, type, or variable.
+//
+// Built on top of srclib (https://srclib.org).
+// Inspired by Docco (http://jashkenas.github.io/docco/), Groc
+// (http://nevir.github.io/groc/), and Gocco
+// (http://nikhilm.github.io/gocco/).
+//
+// Installation:
+//
+//   $ go get sourcegraph.com/sourcegraph/srcco
+//
+// And install srclib:
+//
+//   $ go get sourcegraph.com/sourcegraph/srclib/cmd/src
+//   # This will only pull down the Go toolchain.
+//   $ src toolchain install-std --skip-ruby --skip-javascript --skip-python
+//
+// Then call srcco like this in the directory you want to build:
+//   $ srcco .
+//
+// Usage: srcco [FLAGS] DIR
+//
+//   Generate documentation for the project at DIR.
+//   For more information, see:
+//           sourcegraph.github.io/srcco
+//     -github-pages=false: create docs in gh-pages branch
+//     -out="docs": The directory name for the output files
+//     -v=false: show verbose output
+//
+// Languages currently supported:
+//
+// - Go
+//
+// Languages that will be supported soon:
+//
+// - Python
+// - Ruby
+// - JavaScript
+// - Java
 package main
 
 import (
@@ -20,6 +60,7 @@ import (
 	"github.com/sourcegraph/syntaxhighlight"
 )
 
+// We define our option flags here.
 var (
 	verboseOpt     bool
 	outDirOpt      string
@@ -40,6 +81,7 @@ func init() {
 	}
 }
 
+// The vLogger is only used for verbose
 var vLogger = log.New(os.Stderr, "", 0)
 
 func vLogf(format string, v ...interface{}) {

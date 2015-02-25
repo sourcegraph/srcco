@@ -6,16 +6,31 @@
  \/___/      \/_/     \/____/    \/____/    \/___/ 
                                                        
 
-srcco (pronounced "source-co") is a literate-programming-style documentation generator that makes the code clickable so you can jump to the definition of any function, type, or variable.
+srcco (pronounced "source-co") is a literate-programming-style
+documentation generator that makes the code clickable so you can jump
+to the definition of any function, type, or variable.
 
-For more information, see: http://sourcegraph.github.io/srcco/srcco.go.html
+For more information, see:
+  http://sourcegraph.github.io/srcco/srcco.go.html
 
 Built on top of srclib (https://srclib.org).
-Inspired by Docco (http://jashkenas.github.io/docco/).
+Inspired by Docco (http://jashkenas.github.io/docco/), Groc
+(http://nevir.github.io/groc/), and Gocco
+(http://nikhilm.github.io/gocco/).
 
 Installation:
 
-  go get sourcegraph.com/sourcegraph/srcco
+  $ go get sourcegraph.com/sourcegraph/srcco
+
+And install srclib:
+
+  $ go get sourcegraph.com/sourcegraph/srclib/cmd/src
+  # This will only pull down the Go toolchain.
+  $ src toolchain install-std --skip-ruby --skip-javascript --skip-python
+
+Then call srcco like this in the directory you want to build: 
+
+  $ srcco .
 
 Usage: srcco [FLAGS] DIR
 
