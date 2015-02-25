@@ -3,10 +3,10 @@
 set -e
 
 # Create site dir if it does not exist
-mkdir -p site
+mkdir -p docs
 
 # Python server
-cd site
+cd docs
 python2 -m SimpleHTTPServer &
 cd ..
 
@@ -15,7 +15,7 @@ trap "exit" INT TERM
 trap "kill 0" EXIT
 
 while true; do
-  echo "Building site..."
+  echo "Building docs..."
   make install
   rm -rf .srclib-cache #SAMER: fix this
   srcco -v .
