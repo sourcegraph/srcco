@@ -13,7 +13,8 @@ body {
     padding: 0px 15px;
     background-color: #F2F2F2;
     padding: 0px 15px;
-    width: 600px;
+    min-width: 410px;
+    max-width: 1000px
 }
 .row {
     overflow: hidden;
@@ -50,11 +51,10 @@ body {
     color: inherit;
     text-decoration: none;
     border-radius: 3px;
-    border: solid 1px transparent;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.01) 0%,rgba(0,0,0,0.05) 100%);
+    background: linear-gradient(to bottom, rgba(255,255,255,.35) 0%,rgba(255,255,255,.05) 100%);
 }
 .code a:hover {
-    background: linear-gradient(to bottom, rgba(255,255,0,0.35) 0%,rgba(255,255,0,0.55) 100%);
+    background: linear-gradient(to bottom, rgba(255,255,0,.70) 0%,rgba(255,255,0,0.30) 100%);
 }
 
 /* ---------- nav --------------------------------*/
