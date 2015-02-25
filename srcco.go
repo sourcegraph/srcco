@@ -21,15 +21,15 @@ import (
 )
 
 var (
-	verbose     bool
-	siteDirName string
-	gitHubPages bool
+	verboseOpt     bool
+	outDirOpt      string
+	gitHubPagesOpt bool
 )
 
 func init() {
-	flag.BoolVar(&verbose, "v", false, "show verbose output")
-	flag.StringVar(&siteDirName, "site-dir-name", "site", "The directory name for the output files")
-	flag.BoolVar(&gitHubPages, "github pages", false, "create docs in gh-pages branch")
+	flag.BoolVar(&verboseOpt, "v", false, "show verbose output")
+	flag.StringVar(&outDirOpt, "out", "docs", "The directory name for the output files")
+	flag.BoolVar(&gitHubPagesOpt, "github-pages", false, "create docs in gh-pages branch")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: srcco [FLAGS] DIR\n")
 		fmt.Fprintf(os.Stderr, "Generate documentation for the project at DIR.\n")
@@ -43,14 +43,14 @@ func init() {
 var vLogger = log.New(os.Stderr, "", 0)
 
 func vLogf(format string, v ...interface{}) {
-	if !verbose {
+	if !verboseOpt {
 		return
 	}
 	vLogger.Printf(format, v...)
 }
 
 func vLog(v ...interface{}) {
-	if !verbose {
+	if !verboseOpt {
 		return
 	}
 	vLogger.Println(v...)
@@ -145,7 +145,20 @@ func execute(dir string) error {
 	if err := json.Unmarshal(stdout.Bytes(), &us); err != nil {
 		log.Fatal(err)
 	}
-	return genSite(dir, siteDirName, us.collateFiles())
+	if gitHubPagesOpt {
+		out := ".git/srcco-tmp"
+		if err := genSite(dir, out, us.collateFiles()); err != nil {
+			return err
+		}
+		argv := []string{"bash", "-s"}
+		cmd, stdout, stderr := command(argv)
+		cmd.Stdin = bytes.NewReader(ghPagesScript)
+		if err := cmd.Run(); err != nil {
+			return failedCmd{argv, []interface{}{err, stdout.String(), stderr.String()}}
+		}
+		return nil
+	}
+	return genSite(dir, outDirOpt, us.collateFiles())
 }
 
 type doc struct {
