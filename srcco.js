@@ -1,4 +1,10 @@
 window.onload = function () {
+    // can I do this without javascript?
+    var codes = document.querySelectorAll(".code");
+    for (var i = 0; i < codes.length; i++) {
+        var style = window.getComputedStyle(codes[i].parentElement, null);
+        codes[i].style.height = style.getPropertyValue("height");
+    }
     var names = document.querySelectorAll(".toc-name");
     for (var i = 0; i < names.length; i++) {
         names.item(i).addEventListener("click", function(ev) {
