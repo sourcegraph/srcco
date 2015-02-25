@@ -70,19 +70,6 @@ import (
 	"github.com/sourcegraph/syntaxhighlight"
 )
 
-// We define our option flags here.
-var (
-	// verboseOpt tells srcco to print out debugging logs.
-	verboseOpt bool
-	// outDirOpt is the output directory for the generated
-	// documentation.
-	outDirOpt string
-	// gitHubPagesOpt tells srcco to generate the docs in the
-	// repository's "gh-pages" branch and push it to GitHub. If
-	// gitHubPagesOpt is true, outDirOpt is ignored.
-	gitHubPagesOpt bool
-)
-
 func init() {
 	flag.BoolVar(&verboseOpt, "v", false, "show verbose output")
 	flag.StringVar(&outDirOpt, "out", "docs", "The directory name for the output files")
@@ -96,6 +83,19 @@ func init() {
 		os.Exit(2)
 	}
 }
+
+// We define our option flags here.
+var (
+	// verboseOpt tells srcco to print out debugging logs.
+	verboseOpt bool
+	// outDirOpt is the output directory for the generated
+	// documentation.
+	outDirOpt string
+	// gitHubPagesOpt tells srcco to generate the docs in the
+	// repository's "gh-pages" branch and push it to GitHub. If
+	// gitHubPagesOpt is true, outDirOpt is ignored.
+	gitHubPagesOpt bool
+)
 
 // The vLogger is used for verbose logging.
 var vLogger = log.New(os.Stderr, "", 0)
