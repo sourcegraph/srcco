@@ -1,5 +1,5 @@
 // srcco (pronounced "source-co") is a literate-programming-style
-// documentation generator that makes the code clickable so you can jump
+// documentation generator that links up source code so you can jump
 // to the definition of any function, type, or variable.
 //
 // Built on top of srclib (https://srclib.org).
@@ -20,6 +20,9 @@
 //
 // Then call srcco like this in the directory you want to build:
 //   $ srcco .
+// If you want to host your docs on GitHub Pages, run:
+//   $ srcco -github-pages=true .
+//
 //
 //   Usage: srcco [FLAGS] DIR
 //
@@ -44,6 +47,8 @@
 // - JavaScript
 //
 // - Java
+//
+// Patches welcome!
 package main
 
 import (
