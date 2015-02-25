@@ -590,13 +590,6 @@ func createSegments(src []byte, anns []annotation, docs []doc) ([]segment, error
 	var s segment
 	var lineComment bool
 	addSegment := func() {
-		// Hack.
-		if s.DocHTML == "" {
-			s.DocHTML = "&nbsp;"
-		}
-		if s.CodeHTML == "" {
-			s.CodeHTML = "&nbsp;"
-		}
 		segments = append(segments, s)
 		s = segment{}
 	}
@@ -659,12 +652,6 @@ func createSegments(src []byte, anns []annotation, docs []doc) ([]segment, error
 				string(a.Right)
 			i = a.End
 			anns = anns[1:]
-		}
-		if s.DocHTML == "" {
-			s.DocHTML = "&nbsp;"
-		}
-		if s.CodeHTML == "" {
-			s.CodeHTML = "&nbsp;"
 		}
 		addSegment()
 	}
