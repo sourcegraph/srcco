@@ -76,7 +76,7 @@ func data_publish_gh_pages_sh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "data/publish-gh-pages.sh", size: 4322, mode: os.FileMode(420), modTime: time.Unix(1424862382, 0)}
+	info := bindata_file_info{name: "data/publish-gh-pages.sh", size: 4322, mode: os.FileMode(420), modTime: time.Unix(1424863551, 0)}
 	a := &asset{bytes: bytes, info:  info}
 	return a, nil
 }
@@ -96,7 +96,7 @@ func data_srcco_css() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "data/srcco.css", size: 3423, mode: os.FileMode(420), modTime: time.Unix(1424862382, 0)}
+	info := bindata_file_info{name: "data/srcco.css", size: 3423, mode: os.FileMode(420), modTime: time.Unix(1424863551, 0)}
 	a := &asset{bytes: bytes, info:  info}
 	return a, nil
 }
@@ -116,7 +116,7 @@ func data_srcco_js() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "data/srcco.js", size: 1554, mode: os.FileMode(420), modTime: time.Unix(1424862382, 0)}
+	info := bindata_file_info{name: "data/srcco.js", size: 1554, mode: os.FileMode(420), modTime: time.Unix(1424863551, 0)}
 	a := &asset{bytes: bytes, info:  info}
 	return a, nil
 }
@@ -136,7 +136,7 @@ func data_view_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "data/view.html", size: 823, mode: os.FileMode(420), modTime: time.Unix(1424862382, 0)}
+	info := bindata_file_info{name: "data/view.html", size: 823, mode: os.FileMode(420), modTime: time.Unix(1424863551, 0)}
 	a := &asset{bytes: bytes, info:  info}
 	return a, nil
 }

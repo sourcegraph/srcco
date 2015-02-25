@@ -598,26 +598,27 @@ func ann(src []byte, refs []ref, filename string, defs map[defKey]def) ([]annota
 		if d, ok := defs[defKey{r.DefUnit, r.DefPath}]; ok {
 			id := filepath.Join(d.Unit, d.Path)
 			href := htmlFilename(d.File) + "#" + id
-			if d.DefStart == r.Start {
-				a.Left = []byte(fmt.Sprintf(
-					`<span class="%s" id="%s"><a href="%s">`,
-					string(a.Left),
-					id,
-					href,
-				))
-			} else {
-				a.Left = []byte(fmt.Sprintf(
-					`<span class="%s"><a href="%s">`,
-					string(a.Left),
-					href,
-				))
-			}
+			a.Left = []byte(fmt.Sprintf(
+				`<span class="%s"><a href="%s">`,
+				string(a.Left),
+				href,
+			))
 			a.Right = []byte(`</span></a>`)
 		} else {
 			a.Left = []byte(fmt.Sprintf(`<span class="%s">`, string(a.Left)))
 			a.Right = []byte(`</span>`)
 		}
 		anns = append(anns, annotation{*a, false})
+	}
+
+	for _, d := range defs {
+		a := annotate.Annotation{
+			Left:  []byte(fmt.Sprintf(`<span class="def" id="%s">`, filepath.Join(d.Unit, d.Path))),
+			Right: []byte("</span>"),
+			Start: int(d.DefStart),
+			End:   int(d.DefStart),
+		}
+		anns = append(anns, annotation{a, false})
 	}
 
 	return anns, nil
