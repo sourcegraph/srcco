@@ -303,7 +303,7 @@ func genSite(root, siteName string, files []string) error {
 			return err
 		}
 
-		if err := codeTemplate.Execute(w, HTMLOutput{f, fileTOC, structuredTOCs[f], s}); err != nil {
+		if err := codeTemplate.Execute(w, HTMLOutput{f, resourcePrefix(f), fileTOC, structuredTOCs[f], s}); err != nil {
 			return err
 		}
 	}
@@ -314,6 +314,16 @@ func genSite(root, siteName string, files []string) error {
 		return err
 	}
 	return nil
+}
+
+func resourcePrefix(file string) string {
+	file = filepath.Clean(file)
+	count := strings.Count(file, "/")
+	var prefix string
+	for i := 0; i < count; i++ {
+		prefix += "../"
+	}
+	return prefix
 }
 
 func copyBytes(b []byte, there string) error {
@@ -465,6 +475,7 @@ func createTableOfContents(pathers []pather) string {
 
 type HTMLOutput struct {
 	Title                     string
+	ResourcePrefix            string
 	FileTableOfContents       string
 	StructuredTableOfContents string
 	Segments                  []segment
