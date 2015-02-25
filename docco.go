@@ -1,6 +1,5 @@
-// srclib-docco is a docco-like static documentation generator.
-
-package srclib_docco
+// srcco is a Docco-like static documentation generator.
+package srcco
 
 import (
 	"bytes"
@@ -664,8 +663,9 @@ func createSegments(src []byte, anns []annotation, docs []doc) ([]segment, error
 	return segments, nil
 }
 
-func Main() error {
+func main() {
 	log.SetFlags(log.Lshortfile)
-	_, err := CLI.Parse()
-	return err
+	if _, err := CLI.Parse(); err != nil {
+		log.Fatal(err)
+	}
 }
