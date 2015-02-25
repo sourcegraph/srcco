@@ -20,7 +20,7 @@ import (
 	"github.com/sourcegraph/syntaxhighlight"
 )
 
-var CLI = flags.NewNamedParser("src-docco", flags.Default)
+var CLI = flags.NewNamedParser("srcco", flags.Default)
 
 var GlobalOpt struct {
 	Verbose bool `short:"v" description:"show verbose output"`
@@ -468,22 +468,22 @@ var jsData []byte
 var ghPagesScript []byte
 
 func init() {
-	r, err := Asset("view.html")
+	r, err := Asset("data/view.html")
 	if err != nil {
 		log.Fatal(err)
 	}
 	codeTemplate = template.Must(template.New("view.html").Parse(string(r)))
-	r, err = Asset("srcco.css")
+	r, err = Asset("data/srcco.css")
 	if err != nil {
 		log.Fatal(err)
 	}
 	cssData = r
-	r, err = Asset("srcco.js")
+	r, err = Asset("data/srcco.js")
 	if err != nil {
 		log.Fatal(err)
 	}
 	jsData = r
-	r, err = Asset("publish-gh-pages")
+	r, err = Asset("data/publish-gh-pages.sh")
 	if err != nil {
 		log.Fatal(err)
 	}
