@@ -670,7 +670,7 @@ func createSegments(src []byte, anns []annotation, docs []doc) ([]segment, error
 		for len(anns) != 0 && i > anns[0].Start {
 			anns = anns[1:]
 		}
-		for src[i] == '\n' {
+		for i < len(src) && src[i] == '\n' {
 			i++
 		}
 		// Special case: check to see if there's a newline
