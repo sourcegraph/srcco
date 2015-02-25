@@ -1,6 +1,7 @@
 .PHONY: install testserve serve 
 
 install:
+	go-bindata ./data/
 	go install sourcegraph.com/sourcegraph/srcco
 
 testserve: install
