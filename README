@@ -1,0 +1,36 @@
+  ____      _ __         ___         ___         ___   
+ /',__\    /\`'__\      /'___\      /'___\      / __`\ 
+/\__, `\   \ \ \/      /\ \__/     /\ \__/     /\ \_\ \
+\/\____/    \ \_\      \ \____\    \ \____\    \ \____/
+ \/___/      \/_/       \/____/     \/____/     \/___/ 
+                                                       
+
+srcco (pronounced "source-co") is a literate-programming-style documentation generator that makes the code clickable so you can jump to the definition of any function, type, or variable. For more information, see:
+
+http://sourcegraph.github.io/srcco/srcco.go.html
+
+Built on top of srclib (https://srclib.org). Inspired by Docco (http://jashkenas.github.io/docco/).
+
+Installation:
+
+  go get sourcegraph.com/sourcegraph/srcco
+
+Usage: srcco [FLAGS] DIR
+
+  Generate documentation for the project at DIR.
+  For more information, see:
+          sourcegraph.github.io/srcco
+    -github-pages=false: create docs in gh-pages branch
+    -out="docs": The directory name for the output files
+    -v=false: show verbose output
+
+Languages currently supported:
+
+- Go
+
+Languages that will be supported soon:
+
+- Python
+- Java
+- Ruby
+- JavaScript
