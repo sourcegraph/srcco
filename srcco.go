@@ -4,6 +4,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,58 +16,45 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/jessevdk/go-flags"
 	"github.com/sourcegraph/annotate"
 	"github.com/sourcegraph/syntaxhighlight"
 )
 
-var CLI = flags.NewNamedParser("srcco", flags.Default)
+var (
+	verbose     bool
+	siteDirName string
+	gitHubPages bool
+)
 
-var GlobalOpt struct {
-	Verbose bool `short:"v" description:"show verbose output"`
+func init() {
+	flag.BoolVar(&verbose, "verbose", false, "show verbose output")
+	flag.StringVar(&siteDirName, "site dir name", "site", "The directory name for the output files")
+	flag.BoolVar(&gitHubPages, "github pages", false, "create docs in gh-pages branch")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: srcco [FLAGS] DIR\n")
+		fmt.Fprintf(os.Stderr, "Generate documentation for the project at DIR.\n")
+		fmt.Fprintf(os.Stderr, "For more information, see:\n")
+		fmt.Fprintf(os.Stderr, "\tsourcegraph.github.io/srcco\n")
+		flag.PrintDefaults()
+		os.Exit(2)
+	}
 }
 
 var vLogger = log.New(os.Stderr, "", 0)
 
 func vLogf(format string, v ...interface{}) {
-	if !GlobalOpt.Verbose {
+	if !verbose {
 		return
 	}
 	vLogger.Printf(format, v...)
 }
 
 func vLog(v ...interface{}) {
-	if !GlobalOpt.Verbose {
+	if !verbose {
 		return
 	}
 	vLogger.Println(v...)
 }
-
-func init() {
-	CLI.LongDescription = "srcco is a Docco-like editor that uses... TODO"
-	CLI.AddGroup("Global options", "", &GlobalOpt)
-
-	_, err := CLI.AddCommand("gen",
-		"generate documentation",
-		"Generate docco-like documentation for a thing",
-		&genCmd,
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-// TODO: add limitations help output.
-
-type GenCmd struct {
-	Dir string `long:"dir" description:"The root directory for the project"`
-	// TODO: must be relative to Dir.
-	SiteDirName string `long:"site-dir" description:"The directory name for the output files" default:"site"`
-	// TODO
-	GitHubPages bool `long:"gh-pages" description:"TODO"`
-}
-
-var genCmd GenCmd
 
 // Source units have lots of information associated with them, but we
 // only care about the files.
@@ -121,7 +109,7 @@ func command(argv []string) (cmd *exec.Cmd, stdout *bytes.Buffer, stderr *bytes.
 	return cmd, stdout, stderr
 }
 
-func (c *GenCmd) Execute(args []string) error {
+func execute(dir string) error {
 	if err := ensureSrclibExists(); err != nil {
 		log.Fatal(err)
 	}
@@ -131,15 +119,14 @@ func (c *GenCmd) Execute(args []string) error {
 	//
 	// We could import sourcegraph.com/sourcegraph/srclib, but I
 	// want to demonstrate how to use its command line interface.
-	var dir string // test
-	if c.Dir == "" {
+	if dir == "" {
 		d, err := os.Getwd()
 		if err != nil {
 			log.Fatal(err)
 		}
 		dir = d
 	} else {
-		d, err := filepath.Abs(c.Dir)
+		d, err := filepath.Abs(dir)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -158,7 +145,7 @@ func (c *GenCmd) Execute(args []string) error {
 	if err := json.Unmarshal(stdout.Bytes(), &us); err != nil {
 		log.Fatal(err)
 	}
-	return genSite(dir, c.SiteDirName, us.collateFiles())
+	return genSite(dir, siteDirName, us.collateFiles())
 }
 
 type doc struct {
@@ -688,7 +675,17 @@ func createSegments(src []byte, anns []annotation, docs []doc) ([]segment, error
 
 func main() {
 	log.SetFlags(log.Lshortfile)
-	if _, err := CLI.Parse(); err != nil {
+	flag.Parse()
+	args := flag.Args()
+	if len(args) == 0 {
+		fmt.Fprintf(os.Stderr, "error: must provide a root directory\n")
+		flag.Usage()
+	} else if len(args) > 1 {
+		fmt.Fprintf(os.Stderr, "error: too many args\n")
+		flag.Usage()
+	}
+	if err := execute(args[0]); err != nil {
+		log.Println(err)
 		os.Exit(1)
 	}
 }
