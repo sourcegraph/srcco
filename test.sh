@@ -18,7 +18,7 @@ while true; do
   echo "Building site..."
   make install
   rm -rf .srclib-cache #SAMER: fix this
-  srcco -v gen
+  srcco -v .
 
   echo "Waiting for changes..."
   inotifywait -e modify -r .

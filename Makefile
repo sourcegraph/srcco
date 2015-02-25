@@ -6,7 +6,7 @@ install:
 
 testserve: install
 	rm -rf .srclib-cache/ #SAMER: fix this
-	srcco -v gen
+	srcco -v .
 	cd site && python2 -m SimpleHTTPServer
 
 serve: install

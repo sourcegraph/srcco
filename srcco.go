@@ -27,8 +27,8 @@ var (
 )
 
 func init() {
-	flag.BoolVar(&verbose, "verbose", false, "show verbose output")
-	flag.StringVar(&siteDirName, "site dir name", "site", "The directory name for the output files")
+	flag.BoolVar(&verbose, "v", false, "show verbose output")
+	flag.StringVar(&siteDirName, "site-dir-name", "site", "The directory name for the output files")
 	flag.BoolVar(&gitHubPages, "github pages", false, "create docs in gh-pages branch")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: srcco [FLAGS] DIR\n")

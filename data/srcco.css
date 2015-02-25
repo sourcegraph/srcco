@@ -12,20 +12,20 @@ body {
     margin: 0px auto;
     padding: 0px 15px;
     background-color: #F2F2F2;
-    padding: 0px 15px;
-    min-width: 410px;
-    max-width: 1000px
+    width: auto;
 }
 .row {
     overflow: hidden;
     padding: 10px 15px;
+    width: auto;
 }
 .doc {
     font-size: 17px;
     margin: 0px auto;
     padding: 0px 15px;
     color: #444;
-    width: auto;
+    float: left;
+    width: 500px;
 }
 .code {
     font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
@@ -36,7 +36,7 @@ body {
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1) inset;
     border-radius: 10px;
     background-color: #373937;
-    width: auto;
+    min-width: 400px;
     padding: 10px;
 }
 .code:hover a {
