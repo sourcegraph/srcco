@@ -612,6 +612,9 @@ func ann(src []byte, refs []ref, filename string, defs map[defKey]def) ([]annota
 	}
 
 	for _, d := range defs {
+		if d.File != filename {
+			continue
+		}
 		a := annotate.Annotation{
 			Left:  []byte(fmt.Sprintf(`<span class="def" id="%s">`, filepath.Join(d.Unit, d.Path))),
 			Right: []byte("</span>"),
