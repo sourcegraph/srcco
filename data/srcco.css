@@ -27,6 +27,12 @@ body {
     float: left;
     width: 500px;
 }
+.doc pre {
+    font-size: 12px;
+    width: 500px;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
 .code {
     font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
     font-size: 12px;
