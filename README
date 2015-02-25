@@ -1,15 +1,16 @@
-  ____      _ __         ___         ___         ___   
- /',__\    /\`'__\      /'___\      /'___\      / __`\ 
-/\__, `\   \ \ \/      /\ \__/     /\ \__/     /\ \_\ \
-\/\____/    \ \_\      \ \____\    \ \____\    \ \____/
- \/___/      \/_/       \/____/     \/____/     \/___/ 
+  ____      _ __       ___        ___        ___   
+ /',__\    /\`'__\    /'___\     /'___\     / __`\ 
+/\__, `\   \ \ \/    /\ \__/    /\ \__/    /\ \_\ \
+\/\____/    \ \_\    \ \____\   \ \____\   \ \____/
+ \/___/      \/_/     \/____/    \/____/    \/___/ 
                                                        
 
-srcco (pronounced "source-co") is a literate-programming-style documentation generator that makes the code clickable so you can jump to the definition of any function, type, or variable. For more information, see:
+srcco (pronounced "source-co") is a literate-programming-style documentation generator that makes the code clickable so you can jump to the definition of any function, type, or variable.
 
-http://sourcegraph.github.io/srcco/srcco.go.html
+For more information, see: http://sourcegraph.github.io/srcco/srcco.go.html
 
-Built on top of srclib (https://srclib.org). Inspired by Docco (http://jashkenas.github.io/docco/).
+Built on top of srclib (https://srclib.org).
+Inspired by Docco (http://jashkenas.github.io/docco/).
 
 Installation:
 
@@ -31,6 +32,6 @@ Languages currently supported:
 Languages that will be supported soon:
 
 - Python
-- Java
 - Ruby
 - JavaScript
+- Java
