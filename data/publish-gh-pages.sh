@@ -97,7 +97,7 @@ else
 fi
 
 # We want to keep in complete sync (deleting old docs, or cruft from previous documentation output)
-exec_git ls-files | xargs rm
+exec_git ls-files | xargs rm -f
 
 # The previous solution below fails to copy .dot-files, therefore we utilize
 # `find`, which in turn also made the `if`-statement obsolete.
