@@ -1,7 +1,7 @@
 .PHONY: install testserve serve 
 
 install:
-	go install github.com/samertm/srcco
+	go install sourcegraph.com/sourcegraph/srcco
 
 testserve: install
 	rm -rf .srclib-cache/ #SAMER: fix this
