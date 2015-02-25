@@ -2,23 +2,29 @@
 <html>
   <head>
     <title>{{.Title}}</title>
-    <link rel="stylesheet" href="/style.css">
-    <script src="/script.js"></script>
+    <link rel="stylesheet" href="/srcco.css">
+    <script src="/srcco.js"></script>
   </head>
   <body>
     <div class="tocs">
-      <div class="toc file-toc">
+      <div id="files" class="toc-name">
+        files
+      </div>
+      <div id="defs" class="toc-name">
+        defs
+      </div>
+      <div id="files-toc" class="toc">
         {{.FileTableOfContents}}
       </div>
-      <div class="toc structured-toc">
+      <div id="defs-toc" class="toc">
         {{.StructuredTableOfContents}}
       </div>
     </div>
     <div class="grid">
       {{ range .Segments}}
       <div class="row">
-        <div class="left">{{if .DocHTML}}{{.DocHTML}}{{else}}&nbsp;{{end}}</div>
-        {{if .CodeHTML}}<div class="right code">{{.CodeHTML}}</div>{{end}}
+        <div class="doc">{{if .DocHTML}}{{.DocHTML}}{{else}}&nbsp;{{end}}</div>
+        {{if .CodeHTML}}<div class="code">{{.CodeHTML}}</div>{{end}}
       </div>
       {{ end }}
     </div>

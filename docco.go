@@ -298,7 +298,13 @@ func genSite(root, siteName string, files []string) error {
 			return err
 		}
 	}
-	return copyFile("res/style.css", filepath.Join(sitePath, "style.css"))
+	if err := copyFile("res/srcco.css", filepath.Join(sitePath, "srcco.css")); err != nil {
+		return err
+	}
+	if err := copyFile("res/srcco.js", filepath.Join(sitePath, "srcco.js")); err != nil {
+		return err
+	}
+	return nil
 }
 
 func copyFile(here, there string) error {
@@ -421,7 +427,7 @@ func createTableOfContents(pathers []pather) string {
 		case def:
 			patherToHTML = func(p pather) string {
 				d := p.(def)
-				return fmt.Sprintf(`<li><a class="def" href="%s">%s</a></li>`,
+				return fmt.Sprintf(`<a class="def" href="%s">%s</a>`,
 					htmlFilename(d.File)+"#"+filepath.Join(d.Unit, d.Path),
 					d.Name,
 				)
@@ -429,7 +435,7 @@ func createTableOfContents(pathers []pather) string {
 		case file:
 			patherToHTML = func(p pather) string {
 				f := string(p.(file))
-				return fmt.Sprintf(`<li><a class="file" href="%s">%s</a></li>`,
+				return fmt.Sprintf(`<a class="file" href="%s">%s</a>`,
 					htmlFilename(f),
 					filepath.Base(f),
 				)
@@ -440,18 +446,18 @@ func createTableOfContents(pathers []pather) string {
 	}
 	var nodeToHTML func(n tocNode) string
 	nodeToHTML = func(n tocNode) string {
-		title := fmt.Sprintf(`<li class="node-title">%s</li>`, n.name)
-		body := `<ul class="node-body">`
+		title := fmt.Sprintf(`<div class="node"><div class="node-title">%s</div>`, n.name)
+		body := `<div class="node-body">`
 		for _, c := range n.nodes {
 			body += nodeToHTML(*c)
 		}
 		for _, p := range n.pathers {
 			body += patherToHTML(p)
 		}
-		body += "</ul>"
+		body += "</div></div>"
 		return title + "\n" + body
 	}
-	return "<ul>" + nodeToHTML(*nodes["/"]) + "</ul>"
+	return nodeToHTML(*nodes["/"])
 }
 
 type HTMLOutput struct {
