@@ -95,8 +95,11 @@ body {
 .tocs.active .toc-name {
     width: 160px;
 }
+.toc a {
+    color: white;
+}
 .toc {
-    background: white;
+    background: #c0c0c0;
     position: absolute;
     overflow-y: scroll;
     height: 100px;

@@ -301,6 +301,7 @@ var _ sort.Interface = refs{}
 type def struct {
 	defKey
 	Name     string
+	Kind     string
 	File     string
 	DefStart uint32
 	DefEnd   uint32
@@ -938,9 +939,10 @@ func createTableOfContents(pathers []pather) string {
 	case def:
 		patherToHTML = func(p pather) string {
 			d := p.(def)
-			return fmt.Sprintf(`<div class="node-path"><a class="def" href="%s">%s</a></div>`,
+			return fmt.Sprintf(`<div class="node-path"><a class="def" href="%s">%s</a> - %s</div>`,
 				htmlFilename(d.File)+"#"+filepath.Join(d.Unit, d.Path),
 				d.Name,
+				d.Kind,
 			)
 		}
 	case file:
@@ -964,6 +966,7 @@ func createTableOfContents(pathers []pather) string {
 			template := ` <a href="%s"><i class="fa fa-share-square-o"></i></a>`
 			switch p := (*pather).(type) {
 			case def:
+				title += " - " + p.Kind
 				title += fmt.Sprintf(template, htmlFilename(p.File)+"#"+filepath.Join(p.Unit, p.Path))
 			case file:
 				title += fmt.Sprintf(template, htmlFilename(string(p)), filepath.Base(string(p)))
