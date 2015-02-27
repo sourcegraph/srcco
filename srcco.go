@@ -812,6 +812,7 @@ func main() {
 // author of srcco :)
 type tocNode struct {
 	name    string
+	data    *pather
 	nodes   []*tocNode
 	pathers []pather
 }
@@ -855,11 +856,22 @@ func filesWrapPathers(files []string) []pather {
 
 func createTableOfContents(pathers []pather) string {
 	nodes := map[string]*tocNode{}
-	nodes["/"] = &tocNode{name: "/"}
+	nodes[""] = &tocNode{name: "/"}
+	if len(pathers) == 0 {
+		return ""
+	}
+	switch pathers[0].(type) {
+	case def:
+		nodes[""].name = "all defs"
+	case file:
+		nodes[""].name = "all files"
+	default:
+		log.Fatal("createTableOfContents: illegal state: unknown type for pathers[0]")
+	}
 
 	getParent := func(i int, parts []string) *tocNode {
 		if i == 0 {
-			return nodes["/"]
+			return nodes[""]
 		}
 		parent := nodes[strings.Join(parts[0:i], "/")]
 		if parent == nil {
@@ -880,13 +892,9 @@ func createTableOfContents(pathers []pather) string {
 		// Now we walk through the parts.
 		for i, name := range parts {
 			// If "i" is the last index of "parts", that
-			// means it represents the pather and we need to
-			// add it to a node.
+			// means it represents the pather. We're
+			// ignoring pathers for now.
 			if i == len(parts)-1 {
-				parent := getParent(i, parts)
-				// Now we add this pather to the parent
-				// and break out of the loop.
-				parent.pathers = append(parent.pathers, pather)
 				break
 			}
 			// "i" is not the last index of "parts", which
@@ -906,35 +914,66 @@ func createTableOfContents(pathers []pather) string {
 			parent.nodes = append(parent.nodes, nodes[path])
 		}
 	}
-	var patherToHTML func(p pather) string
-	if len(pathers) != 0 {
-		switch pathers[0].(type) {
-		case def:
-			patherToHTML = func(p pather) string {
-				d := p.(def)
-				return fmt.Sprintf(`<a class="def" href="%s">%s</a>`,
-					htmlFilename(d.File)+"#"+filepath.Join(d.Unit, d.Path),
-					d.Name,
-				)
+	for _, pather := range pathers {
+		if n, ok := nodes[pather.path()]; ok {
+			if n.data != nil {
+				log.Fatal("createTableOfContents: illegal state: n.data != nil")
 			}
-		case file:
-			patherToHTML = func(p pather) string {
-				f := string(p.(file))
-				return fmt.Sprintf(`<a class="file" href="%s">%s</a>`,
-					htmlFilename(f),
-					filepath.Base(f),
-				)
+			p := pather
+			n.data = &p
+			continue
+		}
+		parts := strings.Split(pather.path(), "/")
+		for i := len(parts) - 1; i >= 0; i-- {
+			n, ok := nodes[strings.Join(parts[0:i], "/")]
+			if !ok {
+				continue
 			}
-		default:
-			log.Fatal("createStructuredTOC: illegal state, pather's concrete type unknown")
+			n.pathers = append(n.pathers, pather)
+			break
 		}
 	}
+	var patherToHTML func(p pather) string
+	switch pathers[0].(type) {
+	case def:
+		patherToHTML = func(p pather) string {
+			d := p.(def)
+			return fmt.Sprintf(`<div class="node-path"><a class="def" href="%s">%s</a></div>`,
+				htmlFilename(d.File)+"#"+filepath.Join(d.Unit, d.Path),
+				d.Name,
+			)
+		}
+	case file:
+		patherToHTML = func(p pather) string {
+			f := string(p.(file))
+			return fmt.Sprintf(`<div class="node-path"><a class="file" href="%s">%s</a></div>`,
+				htmlFilename(f),
+				filepath.Base(f),
+			)
+		}
+	}
+	var nodeLevel int
 	var nodeToHTML func(n tocNode) string
 	nodeToHTML = func(n tocNode) string {
-		title := fmt.Sprintf(`<div class="node"><div class="node-title">%s</div>`, n.name)
+		title := fmt.Sprintf(`<div class="node" level=%d><div class="node-title"><i class="fa fa-angle-right carrot"></i> %s`,
+			nodeLevel,
+			n.name,
+		)
+		nodeLevel++
+		if pather := n.data; pather != nil {
+			template := ` <a href="%s"><i class="fa fa-share-square-o"></i></a>`
+			switch p := (*pather).(type) {
+			case def:
+				title += fmt.Sprintf(template, htmlFilename(p.File)+"#"+filepath.Join(p.Unit, p.Path))
+			case file:
+				title += fmt.Sprintf(template, htmlFilename(string(p)), filepath.Base(string(p)))
+			}
+		}
+		title += "</div>"
 		body := `<div class="node-body">`
 		for _, c := range n.nodes {
 			body += nodeToHTML(*c)
+			nodeLevel--
 		}
 		for _, p := range n.pathers {
 			body += patherToHTML(p)
@@ -942,5 +981,5 @@ func createTableOfContents(pathers []pather) string {
 		body += "</div></div>"
 		return title + "\n" + body
 	}
-	return nodeToHTML(*nodes["/"])
+	return nodeToHTML(*nodes[""])
 }

@@ -68,20 +68,18 @@ body {
 
 /* ---------- nav --------------------------------*/
 .tocs {
-    /* disable for now */
-    display: none;
     border: solid 1px black;
     border-top: none;
     position: fixed;
     background: yellow;
-    margin: 0px 15px;
-    top: 0;
-    right: 0;
+    top: 0px;
+    margin: 0px;
+    left: 0px;
     width: 100px;
     height: 20px;
 }
 .tocs.active {
-    width: 300px;
+    width: 320px;
 }
 .tocs .active {
     display: block;
@@ -94,10 +92,11 @@ body {
     text-align: center;
     height: 20px;
 }
-.toc-name.active {
-    width: 150px;
+.tocs.active .toc-name {
+    width: 160px;
 }
 .toc {
+    background: white;
     position: absolute;
     overflow-y: scroll;
     height: 100px;
@@ -108,9 +107,8 @@ body {
 .node-body {
     display: none;
 }
-.toc li {
-    list-style-type: none;
-    margin: 0;
+.toc {
+    padding: 0px 10px;
 }
 
 /* ------- syntax highlighting -------------------*/
