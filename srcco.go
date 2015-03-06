@@ -27,8 +27,10 @@
 //   Usage: srcco [FLAGS] DIR
 //
 //   Generate documentation for the project at DIR.
+//
+//     -enable-sourcegraph=false: generate links to Sourcegraph.com for references to external (out of repo) definitions
 //     -github-pages=false: create docs in gh-pages branch
-//     -out="docs": The directory name for the output files
+//     -out="docs": the directory name for the output files
 //     -v=false: show verbose output
 //
 // I extended the Go srclib toolchain
@@ -61,6 +63,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -72,8 +75,9 @@ import (
 
 func init() {
 	flag.BoolVar(&verboseOpt, "v", false, "show verbose output")
-	flag.StringVar(&outDirOpt, "out", "docs", "The directory name for the output files")
+	flag.StringVar(&outDirOpt, "out", "docs", "the directory name for the output files")
 	flag.BoolVar(&gitHubPagesOpt, "github-pages", false, "create docs in gh-pages branch and push to GitHub")
+	flag.BoolVar(&enableSourcegraphLinksOpt, "enable-sourcegraph", false, "generate links to Sourcegraph.com for references to external (out of repo) definitions")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: srcco [FLAGS] DIR\n")
 		fmt.Fprintf(os.Stderr, "Generate documentation for the project at DIR.\n")
@@ -95,6 +99,10 @@ var (
 	// repository's "gh-pages" branch and push it to GitHub. If
 	// gitHubPagesOpt is true, outDirOpt is ignored.
 	gitHubPagesOpt bool
+	// enableSourcegraphLinksOpt tells srcco to generate links to
+	// Sourcegraph.com for references to external (out of repo)
+	// definitions.
+	enableSourcegraphLinksOpt bool
 )
 
 // The vLogger is used for verbose logging.
@@ -282,10 +290,12 @@ var _ sort.Interface = docs{}
 // reference, it is a reference to itself. We can identify a ref's
 // definition by joining DefUnit and DefPath.
 type ref struct {
-	DefUnit string
-	DefPath string
-	File    string
-	Start   uint32
+	DefRepo     string
+	DefUnitType string
+	DefUnit     string
+	DefPath     string
+	File        string
+	Start       uint32
 }
 
 type refs []ref
@@ -640,8 +650,23 @@ func ann(src []byte, refs []ref, filename string, defs map[defKey]def) ([]annota
 			))
 			a.Right = []byte(`</span></a>`)
 		} else {
-			a.Left = []byte(fmt.Sprintf(`<span class="%s">`, string(a.Left)))
-			a.Right = []byte(`</span>`)
+			// TODO: move api to new backend (which obsoletes 'r.DefRepo != ""')
+			if enableSourcegraphLinksOpt && r.DefRepo != "" {
+				a.Left = []byte(fmt.Sprintf(`<span class="%s"><a href="%s">`,
+					string(a.Left),
+					"https://"+path.Join(
+						"sourcegraph.com",
+						r.DefRepo,
+						"."+r.DefUnitType,
+						r.DefUnit,
+						".def",
+						r.DefPath,
+					)))
+				a.Right = []byte(`</a></span>`)
+			} else {
+				a.Left = []byte(fmt.Sprintf(`<span class="%s">`, string(a.Left)))
+				a.Right = []byte(`</span>`)
+			}
 		}
 		anns = append(anns, *a)
 	}
